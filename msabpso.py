@@ -2,7 +2,7 @@ import random
 import math
 
 
-def MSABPSO(seq, n, w, c1, c2, term, maxIter, f):
+def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
     """The BPSO algorithm fitted for the MSA problem.
 
     :type seq: list of str
@@ -15,31 +15,39 @@ def MSABPSO(seq, n, w, c1, c2, term, maxIter, f):
     :param c1: cognitive coefficient
     :type c2: float
     :param c2: social coefficient
+    :type vmax: float
+    :param vmax: maximum velocity value (clamping) (set to float('inf') for no clamping)
     :type term: float
-    :param term: termination criteria
+    :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: function
+    :type f: ((list of (list of int), list of str, float, float) -> float)
     :param f: fitness function
+    :type w1: float
+    :param w1: weight coefficient for number of aligned characters
+    :type w2: float
+    :param w2: weight coefficient for number of leading indels used
 
-    :rtype: list[int]
-    :returns: The global best
+    :rtype: list of (list of int)
+    :returns: global best position
 
     Initialization Process:
-        Particle positions -> each xi = U(0, 1), where U is uniformly distributed random value that's either 0 or 1
+        Particle positions: each xi = U(0, 1), where U is uniformly distributed random value that's either 0 or 1
 
-        Particle personal best -> Same as initialized position
+        Particle personal best: Same as initialized position
 
-        Particle velocities -> each vi = 0
+        Particle velocities: each vi = 0
 
     BPSO:
-        Topology -> Star (gBest)
+        Topology: Star (gBest)
 
-        Velocity Update -> v(t+1) = w * vi + r1 * c1 * (yi - xi) + r2 * c2 * (ŷi - xi), where r1 and r2 are uniformly random values between [0,1]
+        PSO Type: Synchronous
 
-        Probability on Velocity -> p(t) = Sigmoid(v(t+1)), where v(t+1) is the new velocity vector
+        Velocity Update: v(t+1) = w * vi + r1 * c1 * (yi - xi) + r2 * c2 * (ŷi - xi), where r1 and r2 are uniformly random values between [0,1]
 
-        Position Update -> x(t+1) = { 1, if U(0,1) < p(t); 0, otherwise }
+        Probability on Velocity: p(t+1) = Sigmoid(v(t+1)), where v(t+1) is the new velocity vector
+
+        Position Update: x(t+1) = { 1, if U(0,1) < p(t+1); 0, otherwise }
     """
 
     # Checking for trivial errors first
@@ -49,6 +57,8 @@ def MSABPSO(seq, n, w, c1, c2, term, maxIter, f):
         raise Exception("Number of sequences < 2")
     elif maxIter < 1:
         raise Exception("maxIter cannot be < 1")
+    elif maxIter == float('inf') and term == float('inf'):
+        raise Exception("Maximum iterations and termination fitness are both infinite!")
 
     # Initialize the data containers
     pPositions = []
@@ -58,12 +68,12 @@ def MSABPSO(seq, n, w, c1, c2, term, maxIter, f):
 
     def fitness(pos):
         """
-        :type pos: list of int
+        :type pos: list of (list of int)
         :param pos: Position vector
         :rtype: float
         :returns: Fitness value of position vector
         """
-        return f(pos, seq)
+        return f(pos, seq, w1, w2)
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -92,14 +102,14 @@ def MSABPSO(seq, n, w, c1, c2, term, maxIter, f):
         # Additionally it randomly puts indels in a random spot,
         # but only just the right amount of them so the initial
         # position is feasible.
-        for s in seq:
+        for j in range(numOfSeq):
             position.append([0] * colLength)
             velocity.append([0] * colLength)
-            for x in range(colLength - len(s)):
+            for x in range(colLength - len(seq[j])):
                 while True:
-                    randNum = random.randint(0, colLength)
-                    if position[randNum] != 1:
-                        position[randNum] = 1
+                    randNum = random.randint(0, colLength - 1)
+                    if position[j][randNum] != 1:
+                        position[j][randNum] = 1
                         break
 
         pPositions.append(position)
@@ -111,60 +121,66 @@ def MSABPSO(seq, n, w, c1, c2, term, maxIter, f):
 
     # This is where the iterations begin
 
-    print("Swarm done initialization, now iteration time!")
     it = 0  # iteration count
     while it < maxIter and fitness(pPositions[gBest]) > term:
 
-        for i in range(n):  # for each particle
-            # generating the random stochastic scalars
+        # Update each particle's velocity, position, and personal best
+        for i in range(n):
+            # r1 and r2 are ~ U (0,1)
             r1 = random.random()
             r2 = random.random()
 
-            for j in range(numOfSeq):  # updating velocity and position (using probability)
+            # update velocity and positions in every dimension
+            for j in range(numOfSeq):
                 for x in range(colLength):
                     pVelocities[i][j][x] = w * pVelocities[i][j][x] + \
                                            r1 * c1 * (pPersonalBests[i][j][x] - pPositions[i][j][x]) + \
                                            r2 * c2 * (pPositions[gBest][j][x] - pPositions[i][j][x])
+
+                    # velocity clamping
+                    if pVelocities[i][j][x] > vmax:
+                        pVelocities[i][j][x] = vmax
+                    elif pVelocities[i][j][x] < -vmax:
+                        pVelocities[i][j][x] = -vmax
+
                     probability = Sigmoid(pVelocities[i][j][x])
                     pPositions[i][j][x] = 1 if random.uniform(0, 1) < probability else 0
 
+            # update personal best if applicable
             if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
                 pPersonalBests[i] = pPositions[i]
+
+        # update the global best after all positions were changed (synchronous PSO)
+        for i in range(n):
             if fitness(pPositions[i]) > fitness(pPositions[gBest]):  # update global best if applicable
                 gBest = i
 
         it = it + 1
     return pPositions[gBest]
 
-
-'''
-    Sigmoid
-    
-    The classic sigmoid function.
-'''
-
-
 def Sigmoid(x):
+    """The classic sigmoid function.
+
+    :type x: int
+    :rtype: float
+    """
     return 1 / (1 + math.exp(-x))
 
+def posToStrings(position, seq):
+    """Converts a list of sequences into a list of strings with indels, according to the position vector given.
 
-'''
-    Used for converting a position to a list of strings.
-    
-    position -> a vector of a particle position 
-    baseSequences -> a list of sequences (strings)
-'''
-
-
-def posToStrings(position, baseSequences):
+    :type position: list of (list of int)
+    :type seq: list of str
+    :rtype: list of str
+    """
     result = []
     i = 0
     for bitlist in position:
         j = 0
         result.append("")
         for bit in bitlist:
-            if bit == 0 and j < len(baseSequences[i]):
-                result[len(result) - 1] = result[len(result) - 1] + baseSequences[i][j]
+            if bit == 0 and j < len(seq[i]):
+                result[len(result) - 1] = result[len(result) - 1] + seq[i][j]
                 j = j + 1
             else:
                 result[len(result) - 1] = result[len(result) - 1] + "-"
@@ -173,6 +189,11 @@ def posToStrings(position, baseSequences):
 
 
 def numOfAlignedChars(strings):
+    """Counts the number of aligned characters in a list of strings.
+
+    :type strings: list of str
+    :rtype: int
+    """
     if len(strings) < 1:
         raise Exception("There's no strings in the num of aligned chars function")
     elif len(strings) == 1:
@@ -197,22 +218,29 @@ def numOfAlignedChars(strings):
 
     return result
 
+def aggregatedFunction(position, seq, w1, w2):
+    """A maximization aggregated fitness function that follows the following formula:
 
-'''
-    aggregatedFunction - to be maximized
-    
-    position -> position vector
-    baseSequences -> list of the base sequences used for position vector
-    w1 -> weight factor for number of aligned characters
-    w2 -> weight factor for number of leading indels
-    
-    If the position given is invalid for the MSA, then -infinity will be
-    returned.
-'''
+    f(x) = w1 * numOfAlignedChars(x) + w2 * (nMax - nI),\n
+    where nMax is the number of total indels,\n
+    and nI is the number of indels in-between characters.
+
+    Note: if the position vector is invalid, then -inf is returned
 
 
-def aggregatedFunction(position, baseSequences, w1, w2):
-    strings = posToStrings(position, baseSequences)
+    :param position: position vector
+    :type position: list of (list of int)
+    :param seq: sequences to be aligned
+    :type seq: list of str
+    :param w1: weight coefficient for number of aligned characters
+    :type w1: float
+    :param w2: weight coefficient for number of leading indels used
+    :type w2: float
+    :rtype: float
+    :return: fitness value
+    """
+
+    strings = posToStrings(position, seq)
 
     nMax = 0  # total number of indels
 
@@ -228,33 +256,22 @@ def aggregatedFunction(position, baseSequences, w1, w2):
     # If the number of 0 bits is more than the
     # amount of characters for the sequence, then
     # it's invalid. (return -infinity)
-    for i in range(len(baseSequences)):
+    for i in range(len(seq)):
         tmp = 0
         hitFirstChar = False
         for bit in position[i]:
             if bit == 0:
                 tmp = tmp + 1
                 hitFirstChar = True
-            elif bit == 1 and hitFirstChar and tmp < len(baseSequences[i]):
+            elif bit == 1 and hitFirstChar and tmp < len(seq[i]):
                 nI = nI + 1  # an indel was found in-between characters
 
-        if tmp != len(baseSequences[i]):
+        if tmp != len(seq[i]):
             return float('-inf')  # return a very small number, this position is invalid
 
     return (w1 * numOfAlignedChars(strings)) + (w2 * (nMax - nI))
 
-
-'''
-    UNUSED AS OF RN
-    colDashRemove
-
-    Removes a column that consists of only dashes.
-
-    x -> the position vector
-    y -> the sequences list
-'''
-
-
+# unused as of right now
 def colDashRemove(x, y):
     for i in range(len(x[0])):
         dash = False
@@ -272,24 +289,27 @@ def colDashRemove(x, y):
     return x
 
 
-pos = [
-    [0, 0, 1, 0, 1, 1, 0],
-    [1, 1, 0, 0, 0, 1, 1]
-]
 
-seq = ["AFOW", "WOS"]
-for string in posToStrings(pos, seq):
-    print(string)
+#----TESTING AREA----#
+baseSequences = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDWYDVICINIQW", "FNADCDVYGENKETGLCAEFAENQWC", "IGGQQNLTFDLLCTIECWQYGI", "LEKQNCQNKNTTKFIIFLDDLV", "QIQGLYFLANGKAVVCKNKYTTN", "QFGAGFDKAEIENCQDTYCLFQGWEQK", "GFDWETLWWLIKFYEFTGTICCWNN", "GEDYWAGGVKIVGGICADKAEWKA"]
 
-print(aggregatedFunction(pos, seq, 1, 1))
+def testBPSOFuncWeight(seq, f, w1, w2):
+    bestPos = []
+    bestScore = 0
 
-print(type(>))
+    print("w1:", w1, "w2:", w2)
 
-baseSequences = ["AABGT", "AABGT", "ALWI"]
+    for i in range(30):
+        pos = MSABPSO(seq, 30, 0.9, 2, 2, 2, float('inf'), 5000, f, 0.5, 0.5)
+        score = f(pos,seq,w1,w2)
+        if score > bestScore:
+            bestScore = score
+            bestPos = pos
 
-bestPos = MSABPSO(baseSequences, 15, 0.7, 1.4, 1.4, 500, 5000)
-bestStrings = posToStrings(bestPos, baseSequences)
+    print("Best Score:", bestScore)
+    for string in posToStrings(bestPos,seq):
+        print(string)
 
-print("Best score: " + str(aggregatedFunction(bestPos, baseSequences)))
-for string in bestStrings:
-    print(string)
+testBPSOFuncWeight(baseSequences, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(baseSequences, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(baseSequences, aggregatedFunction, 0.3, 0.7)
