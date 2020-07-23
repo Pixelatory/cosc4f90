@@ -32,7 +32,7 @@
       <recent name="$PROJECT_DIR$/../MSA" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.msabpso">
+  <component name="RunManager" selected="Python.msa">
     <configuration name="SPSO" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MSA" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -123,10 +123,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.msa" />
         <item itemvalue="Python.msabpso" />
         <item itemvalue="Python.msabpso - old" />
         <item itemvalue="Python.SPSO" />
-        <item itemvalue="Python.msa" />
       </list>
     </recent_temporary>
   </component>
@@ -229,5 +229,6 @@
     <SUITE FILE_PATH="coverage/untitled$PSO.coverage" NAME="SPSO Coverage Results" MODIFIED="1594491826411" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../MSA" />
     <SUITE FILE_PATH="coverage/untitled$msa.coverage" NAME="msa Coverage Results" MODIFIED="1594414969292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/untitled$msabpso.coverage" NAME="msabpso Coverage Results" MODIFIED="1595464475760" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../MSA" />
+    <SUITE FILE_PATH="coverage/cosc4f90$msa.coverage" NAME="msa Coverage Results" MODIFIED="1595529207020" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
