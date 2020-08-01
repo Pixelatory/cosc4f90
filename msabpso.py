@@ -1,8 +1,27 @@
 import random
 import math
+import os
+import datetime
+import logging
+
+'''
+    BPSO for the MSA Problem
+    Nick Aksamit 2020
+        
+    Acknowledgement goes towards: 
+    
+    1. A Comparison of Binary Particle Swarm Optimization and Angle Modulated Particle 
+    Swarm Optimization for Multiple Sequence Alignment (unknown)
+    
+    2. Multiple Sequence Alignment Based on a Binary 
+    Particle Swarm Optimization Algorithm (Hai-Xia Long, Wen-Bo Xu, Jun Sun, Wen-Juan Ji)
+    
+    1. Helped me reference that the BPSO works correctly to this person's studies
+    2. Helped me reference how the MSA problem should be represented in a BPSO format
+'''
 
 
-def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
+def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, log):
     """The BPSO algorithm fitted for the MSA problem.
 
     :type seq: list of str
@@ -17,16 +36,20 @@ def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
     :param c2: social coefficient
     :type vmax: float
     :param vmax: maximum velocity value (clamping) (set to float('inf') for no clamping)
+    :type vmaxiterlimit: int
+    :param vmaxiterlimit: Maximum iteration limit of clamping velocity values
     :type term: float
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: ((list of (list of int), list of str, float, float) -> float)
-    :param f: fitness function
+    :type f: (list of (list of int), list of str, float, float) -> float
+    :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
     :type w2: float
     :param w2: weight coefficient for number of leading indels used
+    :type log: bool
+    :param log: logging results of the MSABPSO
 
     :rtype: list of (list of int)
     :returns: global best position
@@ -60,11 +83,27 @@ def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
     elif maxIter == float('inf') and term == float('inf'):
         raise Exception("Maximum iterations and termination fitness are both infinite!")
 
+    if log:
+        mkdir("MSABPSO logs")
+        logging.basicConfig(filename=("MSABPSO logs/msabpso" + str(datetime.datetime.now().time()) + ".log"),
+                            format='%(message)s',
+                            level=logging.INFO)
+        logging.info("n: " + str(n))
+        logging.info("w: " + str(w))
+        logging.info("c1: " + str(c1))
+        logging.info("c2: " + str(c2))
+        logging.info("vmax: " + str(vmax))
+        logging.info("vmaxiterlimit: " + str(vmaxiterlimit))
+        logging.info("term: " + str(term))
+        logging.info("maxIter: " + str(maxIter))
+        logging.info("f: " + str(f))
+        logging.info("w1: " + str(w1))
+        logging.info("w2: " + str(w2) + "\n")
+
     # Initialize the data containers
     pPositions = []
     pPersonalBests = []
     pVelocities = []
-    gBest = 0  # indice of the global best particle
 
     def fitness(pos):
         """
@@ -83,14 +122,29 @@ def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
     }
 
     # First we need to have the index and length of the longest sequence
+    # logging: each sequence and its length
     for i in range(numOfSeq):
         s = len(seq[i])
+
+        if log:
+            logging.info(str(seq[i]) + " " + str(s))
+
         if lSeq["len"] < s:
             lSeq["idx"] = i
             lSeq["len"] = s
 
+    if log:
+        logging.info("Number of Sequences: " + str(numOfSeq) + "\n")
+
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
     colLength = math.ceil(lSeq["len"] * 1.2)
+
+    gBestPos = [[0] * colLength] * numOfSeq  # global best position
+
+    if log:
+        logging.info("Initial Global Best: " + str(gBestPos))
+        logging.info("Initial Global Best Fitness: " + str(fitness(gBestPos)))
+        logging.info("\nInitial Particle Values:")
 
     # Initializing the particles of swarm
     for i in range(n):
@@ -104,7 +158,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
         # position is feasible.
         for j in range(numOfSeq):
             position.append([0] * colLength)
-            velocity.append([0] * colLength)
+            velocity.append([float(0)] * colLength)
             for x in range(colLength - len(seq[j])):
                 while True:
                     randNum = random.randint(0, colLength - 1)
@@ -116,13 +170,26 @@ def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
         pPersonalBests.append(position)
         pVelocities.append(velocity)
 
-        if fitness(position) > fitness(pPositions[gBest]):
-            gBest = i
+        if log:
+            logging.info("Particle " + str(i) + ":")
+            logging.info("\tPosition: " + str(position))
+            logging.info("\tPersonal Best: " + str(position))
+            logging.info("\tVelocity: " + str(velocity))
+            logging.info("\tFitness: " + str(fitness(position)))
+
+        if fitness(position) > fitness(gBestPos):
+            gBestPos = copy(position)
+
+    if log:
+        logging.info("\nGlobal best pos after particle initialization: " + str(gBestPos))
+        logging.info("Global best fitness: " + str(fitness(gBestPos)) + "\n")
 
     # This is where the iterations begin
-
     it = 0  # iteration count
-    while it < maxIter and fitness(pPositions[gBest]) > term:
+    while it < maxIter and fitness(gBestPos) < term:
+
+        if log:
+            logging.info("Iteration " + str(it))
 
         # Update each particle's velocity, position, and personal best
         for i in range(n):
@@ -130,41 +197,77 @@ def MSABPSO(seq, n, w, c1, c2, vmax, term, maxIter, f, w1, w2):
             r1 = random.random()
             r2 = random.random()
 
+            if log:
+                logging.info("\tParticle " + str(i))
+                logging.info("\t\tr1: " + str(r1))
+                logging.info("\t\tr2: " + str(r2))
+
             # update velocity and positions in every dimension
             for j in range(numOfSeq):
                 for x in range(colLength):
                     pVelocities[i][j][x] = w * pVelocities[i][j][x] + \
                                            r1 * c1 * (pPersonalBests[i][j][x] - pPositions[i][j][x]) + \
-                                           r2 * c2 * (pPositions[gBest][j][x] - pPositions[i][j][x])
+                                           r2 * c2 * (gBestPos[j][x] - pPositions[i][j][x])
 
                     # velocity clamping
-                    if pVelocities[i][j][x] > vmax:
-                        pVelocities[i][j][x] = vmax
-                    elif pVelocities[i][j][x] < -vmax:
-                        pVelocities[i][j][x] = -vmax
+                    if vmaxiterlimit < it:
+                        if pVelocities[i][j][x] > vmax:
+                            pVelocities[i][j][x] = vmax
+                        elif pVelocities[i][j][x] < -vmax:
+                            pVelocities[i][j][x] = -vmax
 
                     probability = Sigmoid(pVelocities[i][j][x])
                     pPositions[i][j][x] = 1 if random.uniform(0, 1) < probability else 0
 
             # update personal best if applicable
             if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
-                pPersonalBests[i] = pPositions[i]
+                pPersonalBests[i] = copy(pPositions[i])
+
+            if log:
+                logging.info("\t\tPosition: " + str(pPositions[i]))
+                logging.info("\t\tPersonal Best: " + str(pPersonalBests[i]))
+                logging.info("\t\tVelocity: " + str(pVelocities[i]))
+                logging.info("\t\tFitness: " + str(fitness(pPositions[i])))
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):
-            if fitness(pPositions[i]) > fitness(pPositions[gBest]):  # update global best if applicable
-                gBest = i
+            if fitness(pPositions[i]) > fitness(gBestPos):  # update global best if applicable
+                gBestPos = copy(pPositions[i])
+
+        if log:
+            logging.info("\n\tGlobal best pos: " + str(gBestPos))
+            logging.info("\tGlobal best fitness: " + str(fitness(gBestPos)))
 
         it = it + 1
-    return pPositions[gBest]
+
+    if log:
+        logging.info("\n\tFinal global best pos: " + str(gBestPos))
+        logging.info("\tFinal global best fitness: " + str(fitness(gBestPos)))
+
+    return gBestPos
+
+
+def mkdir(path):
+    os.mkdir(path)
+
+
+def copy(li):
+    result = []
+    for sublist in li:
+        result.append([])
+        for item in sublist:
+            result[len(result) - 1].append(item)
+    return result
+
 
 def Sigmoid(x):
     """The classic sigmoid function.
 
-    :type x: int
+    :type x: float
     :rtype: float
     """
     return 1 / (1 + math.exp(-x))
+
 
 def posToStrings(position, seq):
     """Converts a list of sequences into a list of strings with indels, according to the position vector given.
@@ -211,12 +314,12 @@ def numOfAlignedChars(strings):
                 else:
                     charList[i][string[i]] = 1
 
-    for dict in charList:
-        for v in dict.values():
+    for d in charList:
+        for v in d.values():
             if v > 1:
                 result = result + v
-
     return result
+
 
 def aggregatedFunction(position, seq, w1, w2):
     """A maximization aggregated fitness function that follows the following formula:
@@ -249,7 +352,7 @@ def aggregatedFunction(position, seq, w1, w2):
             if bit == 1:
                 nMax = nMax + 1
 
-    nI = 0  # number of indels inbetween chars
+    nI = 0  # number of indels before last char
 
     # The small procedure below counts for nI,
     # and also eliminates infeasible positions.
@@ -258,18 +361,20 @@ def aggregatedFunction(position, seq, w1, w2):
     # it's invalid. (return -infinity)
     for i in range(len(seq)):
         tmp = 0
-        hitFirstChar = False
+        hitLastChar = False
         for bit in position[i]:
             if bit == 0:
                 tmp = tmp + 1
-                hitFirstChar = True
-            elif bit == 1 and hitFirstChar and tmp < len(seq[i]):
-                nI = nI + 1  # an indel was found in-between characters
+                if tmp == len(seq[i]):
+                    hitLastChar = True
+            elif bit == 1 and not hitLastChar:
+                nI = nI + 1  # an indel was found before the last character in sequence
 
         if tmp != len(seq[i]):
-            return float('-inf')  # return a very small number, this position is invalid
+            return float('-inf')  # return a very small number, this solution is infeasible
 
     return (w1 * numOfAlignedChars(strings)) + (w2 * (nMax - nI))
+
 
 # unused as of right now
 def colDashRemove(x, y):
@@ -289,27 +394,73 @@ def colDashRemove(x, y):
     return x
 
 
+# ----TESTING AREA----#
+test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]
+test2 = ["GAAAGTG", "CGACACTAGA", "CGCAGT"]
+test3 = ["TCATGT", "GCGAT", "CGTTGT", "TCGATT", "AGCACTAG", "GAGTAGAC"]
+test4 = ["DMHCMHDHMMDDMPM", "MMDCCDCCPCPCHPDPC"]
+test5 = ["SCWIISRSWIWCICCRI", "WCSIWSWIWWISRICWI", "WSWWIWRCCISWCISI", "RRCCWSIRRCSRWS", "SWCRWSWSWIIRISWI"]
+test6 = ["ATAHVVTAFIIWGSSGWWQFGIGVI", "IVISFVWQTIIIAGIIQFSHGAST"]
+test7 = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDWYDVICINIQW",
+         "FNADCDVYGENKETGLCAEFAENQWC", "IGGQQNLTFDLLCTIECWQYGI", "LEKQNCQNKNTTKFIIFLDDLV",
+         "QIQGLYFLANGKAVVCKNKYTTN", "QFGAGFDKAEIENCQDTYCLFQGWEQK", "GFDWETLWWLIKFYEFTGTICCWNN",
+         "GEDYWAGGVKIVGGICADKAEWKA"]
 
-#----TESTING AREA----#
-baseSequences = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDWYDVICINIQW", "FNADCDVYGENKETGLCAEFAENQWC", "IGGQQNLTFDLLCTIECWQYGI", "LEKQNCQNKNTTKFIIFLDDLV", "QIQGLYFLANGKAVVCKNKYTTN", "QFGAGFDKAEIENCQDTYCLFQGWEQK", "GFDWETLWWLIKFYEFTGTICCWNN", "GEDYWAGGVKIVGGICADKAEWKA"]
 
 def testBPSOFuncWeight(seq, f, w1, w2):
+    """Just a testing function for the BPSO on an MSA problem"""
     bestPos = []
     bestScore = 0
+    sumScore = 0
 
     print("w1:", w1, "w2:", w2)
 
     for i in range(30):
-        pos = MSABPSO(seq, 30, 0.9, 2, 2, 2, float('inf'), 5000, f, 0.5, 0.5)
-        score = f(pos,seq,w1,w2)
+        print(i)
+        pos = MSABPSO(seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, f, w1, w2, False)
+        score = f(pos, seq, w1, w2)
+        sumScore = sumScore + score
         if score > bestScore:
             bestScore = score
             bestPos = pos
 
     print("Best Score:", bestScore)
-    for string in posToStrings(bestPos,seq):
+    print("Average Score:", sumScore / 30)
+    for string in posToStrings(bestPos, seq):
         print(string)
 
-testBPSOFuncWeight(baseSequences, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(baseSequences, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(baseSequences, aggregatedFunction, 0.3, 0.7)
+
+print("test 1")
+testBPSOFuncWeight(test1, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test1, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test1, aggregatedFunction, 0.3, 0.7)
+
+print("test 2")
+testBPSOFuncWeight(test2, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test2, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test2, aggregatedFunction, 0.3, 0.7)
+
+print("test 3")
+testBPSOFuncWeight(test3, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test3, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test3, aggregatedFunction, 0.3, 0.7)
+
+print("test 4")
+testBPSOFuncWeight(test4, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test4, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test4, aggregatedFunction, 0.3, 0.7)
+
+print("test 5")
+testBPSOFuncWeight(test5, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test5, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test5, aggregatedFunction, 0.3, 0.7)
+
+print("test 6")
+testBPSOFuncWeight(test6, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test6, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test6, aggregatedFunction, 0.3, 0.7)
+
+print("test 7")
+testBPSOFuncWeight(test7, aggregatedFunction, 0.6, 0.4)
+testBPSOFuncWeight(test7, aggregatedFunction, 0.5, 0.5)
+testBPSOFuncWeight(test7, aggregatedFunction, 0.3, 0.7)

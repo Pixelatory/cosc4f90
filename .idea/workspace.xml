@@ -19,7 +19,9 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f1ab7da9-2086-46a7-8eb7-4291cd4da991" name="Default Changelist" comment="">
+    <list default="true" id="f1ab7da9-2086-46a7-8eb7-4291cd4da991" name="Default Changelist" comment="changed some stuff">
+      <change afterPath="$PROJECT_DIR$/msaampso.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/msabpso.py" beforeDir="false" afterPath="$PROJECT_DIR$/msabpso.py" afterDir="false" />
     </list>
@@ -49,14 +51,14 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="full.screen.before.presentation.mode" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../MSA" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/../MSA" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.msabpso (1)">
+  <component name="RunManager" selected="Python.msabpso">
     <configuration name="SPSO" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MSA" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -123,28 +125,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="msabpso (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="MSA" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/msabpso.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="msabpso" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MSA" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -167,9 +147,31 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="msabpso" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="cosc4f90" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/msabpso.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.msabpso (1)" />
+        <item itemvalue="Python.msabpso" />
         <item itemvalue="Python.msa" />
         <item itemvalue="Python.msabpso" />
         <item itemvalue="Python.msabpso - old" />
@@ -195,7 +197,8 @@
       <workItem from="1595354324795" duration="20493000" />
       <workItem from="1595519745987" duration="296000" />
       <workItem from="1595520097820" duration="3093000" />
-      <workItem from="1595529072796" duration="7591000" />
+      <workItem from="1595529072796" duration="8111000" />
+      <workItem from="1595631446473" duration="20134000" />
     </task>
     <task id="LOCAL-00001" summary="py files up!">
       <created>1595529248726</created>
@@ -211,7 +214,14 @@
       <option name="project" value="LOCAL" />
       <updated>1595529280321</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="changed some stuff">
+      <created>1595546621054</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1595546621054</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -227,18 +237,28 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="py files up!" />
     <MESSAGE value="deleted .idea" />
-    <option name="LAST_COMMIT_MESSAGE" value="deleted .idea" />
+    <MESSAGE value="changed some stuff" />
+    <option name="LAST_COMMIT_MESSAGE" value="changed some stuff" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1592781459709">
+    <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1595631723649">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.900@0.0.1440.900" timestamp="1592781459709" />
-    <state width="1398" height="164" key="GridCell.Tab.0.bottom" timestamp="1595546090430">
+    <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.900@0.0.1440.900" timestamp="1595631723649" />
+    <state x="388" y="259" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1596066695534">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="388" y="259" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1440.900@0.0.1440.900" timestamp="1596066695534" />
+    <state x="406" y="65" key="#msabpso_(1)" timestamp="1595631745703">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="406" y="65" key="#msabpso_(1)/0.0.1440.900@0.0.1440.900" timestamp="1595631745703" />
+    <state width="1398" height="246" key="GridCell.Tab.0.bottom" timestamp="1596116735620">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.bottom.inPresentationMode" timestamp="1592781645152">
@@ -246,8 +266,8 @@
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.bottom.inPresentationMode/0.0.1440.900@0.0.1440.900" timestamp="1592781645152" />
     <state width="1398" height="304" key="GridCell.Tab.0.bottom/0.0.1440.829@0.0.1440.829" timestamp="1595519399632" />
-    <state width="1398" height="164" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1595546090430" />
-    <state width="1398" height="164" key="GridCell.Tab.0.center" timestamp="1595546090429">
+    <state width="1398" height="246" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1596116735620" />
+    <state width="1398" height="246" key="GridCell.Tab.0.center" timestamp="1596116735619">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.center.inPresentationMode" timestamp="1592781645149">
@@ -255,8 +275,8 @@
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.center.inPresentationMode/0.0.1440.900@0.0.1440.900" timestamp="1592781645149" />
     <state width="1398" height="304" key="GridCell.Tab.0.center/0.0.1440.829@0.0.1440.829" timestamp="1595519399631" />
-    <state width="1398" height="164" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1595546090429" />
-    <state width="1398" height="164" key="GridCell.Tab.0.left" timestamp="1595546090428">
+    <state width="1398" height="246" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1596116735619" />
+    <state width="1398" height="246" key="GridCell.Tab.0.left" timestamp="1596116735618">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.left.inPresentationMode" timestamp="1592781645005">
@@ -264,8 +284,8 @@
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.left.inPresentationMode/0.0.1440.900@0.0.1440.900" timestamp="1592781645005" />
     <state width="1398" height="304" key="GridCell.Tab.0.left/0.0.1440.829@0.0.1440.829" timestamp="1595519399631" />
-    <state width="1398" height="164" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1595546090428" />
-    <state width="1398" height="164" key="GridCell.Tab.0.right" timestamp="1595546090429">
+    <state width="1398" height="246" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1596116735618" />
+    <state width="1398" height="246" key="GridCell.Tab.0.right" timestamp="1596116735620">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.right.inPresentationMode" timestamp="1592781645151">
@@ -273,7 +293,7 @@
     </state>
     <state width="1398" height="245" key="GridCell.Tab.0.right.inPresentationMode/0.0.1440.900@0.0.1440.900" timestamp="1592781645151" />
     <state width="1398" height="304" key="GridCell.Tab.0.right/0.0.1440.829@0.0.1440.829" timestamp="1595519399632" />
-    <state width="1398" height="164" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1595546090429" />
+    <state width="1398" height="246" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1596116735620" />
     <state width="1398" height="304" key="GridCell.Tab.1.bottom" timestamp="1595519399634">
       <screen x="0" y="0" width="1440" height="829" />
     </state>
@@ -294,20 +314,21 @@
     </state>
     <state width="1398" height="304" key="GridCell.Tab.1.right/0.0.1440.829@0.0.1440.829" timestamp="1595519399634" />
     <state width="1398" height="304" key="GridCell.Tab.1.right/0.0.1440.900@0.0.1440.900" timestamp="1595463805240" />
-    <state x="221" y="89" key="SettingsEditor" timestamp="1595529174522">
+    <state x="221" y="89" key="SettingsEditor" timestamp="1596067614486">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="221" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1595529174522" />
-    <state x="320" y="190" key="Vcs.Push.Dialog.v2" timestamp="1595529287358">
+    <state x="221" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1596067614486" />
+    <state x="320" y="190" key="Vcs.Push.Dialog.v2" timestamp="1595546627114">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="320" y="190" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1595529287358" />
-    <state x="385" y="196" width="670" height="676" key="search.everywhere.popup" timestamp="1595443874654">
+    <state x="320" y="190" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1595546627114" />
+    <state x="385" y="196" width="670" height="676" key="search.everywhere.popup" timestamp="1595969285213">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="385" y="196" width="670" height="676" key="search.everywhere.popup/0.0.1440.900@0.0.1440.900" timestamp="1595443874654" />
+    <state x="385" y="196" width="670" height="676" key="search.everywhere.popup/0.0.1440.900@0.0.1440.900" timestamp="1595969285213" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/cosc4f90$msabpso.coverage" NAME="msabpso Coverage Results" MODIFIED="1596116735610" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MSA$msa.coverage" NAME="msa Coverage Results" MODIFIED="1593206056156" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/untitled$PSO.coverage" NAME="SPSO Coverage Results" MODIFIED="1594491826411" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../MSA" />
     <SUITE FILE_PATH="coverage/untitled$msa.coverage" NAME="msa Coverage Results" MODIFIED="1594414969292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
