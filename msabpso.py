@@ -5,7 +5,7 @@ import datetime
 import logging
 import concurrent.futures
 import copy
-from shared import aggregatedFunction, posToStrings
+from shared import aggregatedFunction, posToStrings, getLongestSeqDict
 
 '''
     BPSO for the MSA Problem
@@ -119,22 +119,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
-    lSeq = {  # longest sequence (index value and length)
-        "idx": 0,
-        "len": len(seq[0])
-    }
-
-    # First we need to have the index and length of the longest sequence
-    # logging: each sequence and its length
-    for i in range(numOfSeq):
-        s = len(seq[i])
-
-        if log:
-            logging.info(str(seq[i]) + " " + str(s))
-
-        if lSeq["len"] < s:
-            lSeq["idx"] = i
-            lSeq["len"] = s
+    lSeq = getLongestSeqDict(seq)
 
     if log:
         logging.info("Number of Sequences: " + str(numOfSeq) + "\n")

@@ -8,7 +8,7 @@ import concurrent.futures
 
 from typing import List
 
-from shared import aggregatedFunction, posToStrings
+from shared import aggregatedFunction, posToStrings, getLongestSeqDict
 
 '''
     AMPSO for the MSA Problem
@@ -157,42 +157,9 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
 
         return f(bitMatrix, seq, w1, w2, False)
 
-    def gen(x, a, b, c, d):
-        """
-        Angular Modulation Generation Function
-
-        :type x: float
-        :param x: Randomly sampled value within a range
-        :type a: float
-        :param a: horizontal shift coefficient
-        :type b: float
-        :param b: frequency coefficient
-        :type c: float
-        :param c: frequency coefficient
-        :type d: float
-        :param d: vertical shift coefficient
-        :rtype: float
-        """
-        return math.sin(2 * math.pi * (x - a) * b * math.cos(2 * math.pi * c * (x - a))) + d
-
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
-    lSeq = {  # longest sequence (index value and length)
-        "idx": 0,
-        "len": len(seq[0])
-    }
-
-    # First we need to have the index and length of the longest sequence
-    # logging: each sequence and its length
-    for i in range(numOfSeq):
-        s = len(seq[i])
-
-        if log:
-            logging.info(str(seq[i]) + " " + str(s))
-
-        if lSeq["len"] < s:
-            lSeq["idx"] = i
-            lSeq["len"] = s
+    lSeq = getLongestSeqDict(seq)
 
     if log:
         logging.info("Number of Sequences: " + str(numOfSeq) + "\n")
@@ -286,6 +253,8 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
             logging.info("\n\tGlobal best pos: " + str(gBestPos))
             logging.info("\tGlobal best fitness: " + str(fitness(gBestPos)))
 
+        print(it, fitness(gBestPos))
+
         it = it + 1
 
     if log:
@@ -300,6 +269,26 @@ def mkdir(path):
         os.mkdir(path)
     except FileExistsError:
         pass
+
+
+def gen(x, a, b, c, d):
+    """
+    Angular Modulation Generation Function
+
+    :type x: float
+    :param x: Randomly sampled value within a range
+    :type a: float
+    :param a: horizontal shift coefficient
+    :type b: float
+    :param b: frequency coefficient
+    :type c: float
+    :param c: frequency coefficient
+    :type d: float
+    :param d: vertical shift coefficient
+    :rtype: float
+    """
+    return math.sin(2 * math.pi * (x - a) * b * math.cos(2 * math.pi * c * (x - a))) + d
+
 
 
 # ----TESTING AREA----#
@@ -336,11 +325,12 @@ def testBPSOFuncWeight(seq, w1, w2):
     bestScore = 0
     sumScore = 0
 
+    print("Started " + str(datetime.datetime.now().time()))
     print("w1:", w1, "w2:", w2)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
         e = []
-        for i in range(30):
+        for i in range(1):
             print("Created " + str(i))
             e.append(
                 executor.submit(MSAAMPSO, seq, [-2.0, 2.0], [4.0, 4.0], 30, 0.729844, 1.49618, 1.49618, 4, 500,
@@ -365,6 +355,8 @@ def testBPSOFuncWeight(seq, w1, w2):
     print("Final Result: ")
     for string in posToStrings(bestPos, seq):
         print(string)
+
+    print("Ended " + str(datetime.datetime.now().time()))
 
 
 print("test 1")

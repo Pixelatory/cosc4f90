@@ -4,6 +4,7 @@
 
     Simply contains functions that may be shared between the MSABPSO and the MSAAMPSO
 """
+from typing import Dict
 
 
 def aggregatedFunction(position, seq, w1, w2, infeasible):
@@ -50,11 +51,11 @@ def aggregatedFunction(position, seq, w1, w2, infeasible):
         tmp = 0
         hitLastChar = False
         for bit in position[i]:
-            if bit == 0:
+            if bit == 0 and not hitLastChar:
                 tmp = tmp + 1
                 if tmp == len(seq[i]):
                     hitLastChar = True
-            elif bit == 1 and not hitLastChar:
+            elif not hitLastChar:
                 nI = nI + 1  # an indel was found before the last character in sequence
 
         if infeasible and tmp != len(seq[i]):
@@ -113,3 +114,19 @@ def numOfAlignedChars(strings):
             if v > 1:
                 result = result + v
     return result
+
+
+def getLongestSeqDict(seq):
+    lSeq = {  # longest sequence (index value and length)
+        "idx": 0,
+        "len": len(seq[0])
+    }
+
+    for i in range(len(seq)):
+        s = len(seq[i])
+
+        if lSeq["len"] < s:
+            lSeq["idx"] = i
+            lSeq["len"] = s
+
+    return lSeq
