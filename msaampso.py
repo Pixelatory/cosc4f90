@@ -43,7 +43,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: (list of (list of int), list of str, float, float) -> float
+    :type f: (list of (list of int), list of str, float, float, bool) -> float
     :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
@@ -155,7 +155,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
                 else:
                     bitMatrix[i].append(0)
 
-        return f(bitMatrix, seq, w1, w2)
+        return f(bitMatrix, seq, w1, w2, False)
 
     def gen(x, a, b, c, d):
         """
@@ -207,10 +207,10 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         position: List[float] = []
         velocity: List[float] = [0] * 4
 
-        position.append(random.uniform(-1, 1)) # coefficient a
-        position.append(random.uniform(0, 1)) # coefficient b
-        position.append(random.uniform(0, 1)) # coefficient c
-        position.append(random.uniform(-0.7, -0.9)) # coefficient d
+        position.append(random.uniform(-1, 1))  # coefficient a
+        position.append(random.uniform(0, 1))  # coefficient b
+        position.append(random.uniform(0, 1))  # coefficient c
+        position.append(random.uniform(-0.7, -0.9))  # coefficient d
 
         pPositions.append(position)
         pPersonalBests.append(position)

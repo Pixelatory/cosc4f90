@@ -1,18 +1,19 @@
-'''
+"""
     Shared Functions
     Nick Aksamit 2020
 
-    This python file simply contains functions that may be shared between the MSABPSO and the MSAAMPSO
-'''
+    Simply contains functions that may be shared between the MSABPSO and the MSAAMPSO
+"""
 
-def aggregatedFunction(position, seq, w1, w2):
+
+def aggregatedFunction(position, seq, w1, w2, infeasible):
     """A maximization aggregated fitness function that follows the following formula:
 
     f(x) = w1 * numOfAlignedChars(x) + w2 * (nMax - nI),\n
     where nMax is the number of total indels,\n
     and nI is the number of indels in-between characters.
 
-    Note: if the position vector is invalid, then -inf is returned
+    Note: if the position vector is invalid and infeasible is true, then -float('inf') is returned
 
 
     :param position: position vector
@@ -23,6 +24,8 @@ def aggregatedFunction(position, seq, w1, w2):
     :type w1: float
     :param w2: weight coefficient for number of leading indels used
     :type w2: float
+    :param infeasible: whether or not a position can be infeasable
+    :type infeasible: bool
     :rtype: float
     :return: fitness value
     """
@@ -54,7 +57,7 @@ def aggregatedFunction(position, seq, w1, w2):
             elif bit == 1 and not hitLastChar:
                 nI = nI + 1  # an indel was found before the last character in sequence
 
-        if tmp != len(seq[i]):
+        if infeasible and tmp != len(seq[i]):
             return float('-inf')  # return a very small number, this solution is infeasible
 
     return (w1 * numOfAlignedChars(strings)) + (w2 * (nMax - nI))
@@ -110,21 +113,3 @@ def numOfAlignedChars(strings):
             if v > 1:
                 result = result + v
     return result
-
-
-# unused as of right now
-def colDashRemove(x, y):
-    for i in range(len(x[0])):
-        dash = False
-        if x[0][i] == 1:
-            dash = True
-            for bitlist in x:
-                if bitlist[i] != 1:
-                    dash = False
-                    break
-
-        if dash:
-            print(str(i) + " is dash")
-            for bitlist in x:
-                bitlist[i] = 0
-    return x

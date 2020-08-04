@@ -45,7 +45,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: (list of (list of int), list of str, float, float) -> float
+    :type f: (list of (list of int), list of str, float, float, bool) -> float
     :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
@@ -69,7 +69,8 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
 
         PSO Type: Synchronous
 
-        Velocity Update: v(t+1) = w * vi + r1 * c1 * (yi - xi) + r2 * c2 * (ŷi - xi), where r1 and r2 are uniformly random values between [0,1]
+        Velocity Update: v(t+1) = w * vi + r1 * c1 * (yi - xi) + r2 * c2 * (ŷi - xi),
+        where r1 and r2 are uniformly random values between [0,1]
 
         Probability on Velocity: p(t+1) = Sigmoid(v(t+1)), where v(t+1) is the new velocity vector
 
@@ -114,7 +115,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
         :rtype: float
         :returns: Fitness value of position vector
         """
-        return f(pos, seq, w1, w2)
+        return f(pos, seq, w1, w2, True)
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -254,6 +255,7 @@ def mkdir(path):
     except FileExistsError:
         pass
 
+
 def Sigmoid(x):
     """The classic sigmoid function.
 
@@ -304,12 +306,14 @@ def testBPSOFuncWeight(seq, w1, w2):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(30):
             print("Created " + str(i))
-            e.append(executor.submit(MSABPSO, seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2, False))
+            e.append(
+                executor.submit(MSABPSO, seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2,
+                                False))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
             print("A result: " + str(result))
-            score = aggregatedFunction(result, seq, w1, w2)
+            score = aggregatedFunction(result, seq, w1, w2, False)
             sumScore += score
             print("\tScore: " + str(score))
             print("\tSum Score: " + str(sumScore))
@@ -325,6 +329,7 @@ def testBPSOFuncWeight(seq, w1, w2):
     print("Final Result: ")
     for string in posToStrings(bestPos, seq):
         print(string)
+
 
 '''
 print("test 1")
