@@ -207,10 +207,6 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         position: List[float] = []
         velocity: List[float] = [0] * 4
 
-        # The angular modulation coefficients are the position
-        for j in range(4):
-            position.append(random.uniform(coefLimit[0], coefLimit[1]))
-
         position.append(random.uniform(-1, 1)) # coefficient a
         position.append(random.uniform(0, 1)) # coefficient b
         position.append(random.uniform(0, 1)) # coefficient c
@@ -296,7 +292,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         logging.info("\n\tFinal global best pos: " + str(gBestPos))
         logging.info("\tFinal global best fitness: " + str(fitness(gBestPos)))
 
-    return gBestPos
+    return gBestPos, fitness(gBestPos)
 
 
 def mkdir(path):
@@ -342,19 +338,18 @@ def testBPSOFuncWeight(seq, w1, w2):
 
     print("w1:", w1, "w2:", w2)
 
-    e = []
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        e = []
         for i in range(30):
             print("Created " + str(i))
             e.append(
                 executor.submit(MSAAMPSO, seq, [-2.0, 2.0], [4.0, 4.0], 30, 0.729844, 1.49618, 1.49618, 4, 500,
-                                float('inf'), 5000, aggregatedFunction, w1, w2, False))
+                                float('inf'), 50, aggregatedFunction, w1, w2, False))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
-            print("A result: " + str(result))
-            score = aggregatedFunction(result, seq, w1, w2)
+            print("A result: " + str(result[0]))
+            score = result[1]
             sumScore += score
             print("\tScore: " + str(score))
             print("\tSum Score: " + str(sumScore))
