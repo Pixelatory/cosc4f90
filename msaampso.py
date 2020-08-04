@@ -3,6 +3,7 @@ import math
 import logging
 import os
 import datetime
+import copy
 
 '''
     AMPSO for the MSA Problem
@@ -75,7 +76,10 @@ def MSAAMPSO(seq, genRange, coefLimits, n, w, c1, c2, vmax, vmaxiterlimit, term,
     def fitness(pos):
         """
         To test fitness in the AMPSO, first you use the position vector as the coefficients
-        of the angular modulation formula. Then,
+        of the angular modulation formula. Then, sample random values within genRange with
+        the coefficients and use these values with the gen function. If the gen function
+        returns a value > 0, the bit is 1, otherwise 0.
+
         :type pos: list of float
         :param pos: Position vector
         :rtype: float
@@ -86,7 +90,11 @@ def MSAAMPSO(seq, genRange, coefLimits, n, w, c1, c2, vmax, vmaxiterlimit, term,
         for i in range(len(seq)):
             bitMatrix.append([])
             for j in range(colLength):
-                bitMatrix[i].append(gen(random.uniform(genRange[0],genRange[1]), pos[0], pos[1], pos[2], pos[3]))
+                val = gen(random.uniform(genRange[0], genRange[1]), pos[0], pos[1], pos[2], pos[3])
+                if val > 0:
+                    bitMatrix[i].append(1)
+                else:
+                    bitMatrix[i].append(0)
 
         return f(bitMatrix, seq, w1, w2)
 
@@ -133,13 +141,14 @@ def MSAAMPSO(seq, genRange, coefLimits, n, w, c1, c2, vmax, vmaxiterlimit, term,
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
     colLength = math.ceil(lSeq["len"] * 1.2)
 
-    gBestPos = [0, 1, 1, 0]
+    gBestPos = [0, 0, 0, 0]
 
     # Initializing the particles of swarm
     for i in range(n):
         position = []
         velocity = []
 
+        # The angular modulation coefficients are the position
         for j in range(4):
             velocity.append(0)
             position.append(random.uniform(coefLimits[0], coefLimits[1]))
@@ -156,17 +165,8 @@ def MSAAMPSO(seq, genRange, coefLimits, n, w, c1, c2, vmax, vmaxiterlimit, term,
             logging.info("\tFitness: " + str(fitness(position)))
 
         if fitness(position) > fitness(gBestPos):
-            gBestPos = copy(position)
+            gBestPos = copy.deepcopy(position)
 
 
 def mkdir(path):
     os.mkdir(path)
-
-
-def copy(li):
-    result = []
-    for sublist in li:
-        result.append([])
-        for item in sublist:
-            result[len(result) - 1].append(item)
-    return result
