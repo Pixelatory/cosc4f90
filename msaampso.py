@@ -344,7 +344,7 @@ def testBPSOFuncWeight(seq, w1, w2):
             print("Created " + str(i))
             e.append(
                 executor.submit(MSAAMPSO, seq, [-2.0, 2.0], [4.0, 4.0], 30, 0.729844, 1.49618, 1.49618, 4, 500,
-                                float('inf'), 50, aggregatedFunction, w1, w2, False))
+                                float('inf'), 5000, aggregatedFunction, w1, w2, False))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
