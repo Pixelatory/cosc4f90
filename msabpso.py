@@ -3,6 +3,8 @@ import math
 import os
 import datetime
 import logging
+import threading
+import concurrent.futures
 
 '''
     BPSO for the MSA Problem
@@ -72,7 +74,6 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
 
         Position Update: x(t+1) = { 1, if U(0,1) < p(t+1); 0, otherwise }
     """
-
     # Checking for trivial errors first
     if n < 1:
         raise Exception("Swarm size cannot be < 1")
@@ -187,7 +188,6 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     # This is where the iterations begin
     it = 0  # iteration count
     while it < maxIter and fitness(gBestPos) < term:
-
         if log:
             logging.info("Iteration " + str(it))
 
@@ -248,7 +248,10 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
 
 
 def mkdir(path):
-    os.mkdir(path)
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        pass
 
 
 def copy(li):
@@ -407,60 +410,89 @@ test7 = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDW
          "GEDYWAGGVKIVGGICADKAEWKA"]
 
 
-def testBPSOFuncWeight(seq, f, w1, w2):
-    """Just a testing function for the BPSO on an MSA problem"""
+def testBPSOFuncWeight(seq, w1, w2):
+    """Just a testing function for the BPSO on an MSA problem  (dynamic w1 and w2 values)\n
+    n = 30\n
+    w = 0.9\n
+    c1 = c2 = 2\n
+    vmax = 2\n
+    vmaxiterlimit = 500\n
+    term = float('inf')\n
+    iter = 5000\n
+    f = aggregatedFunction\n
+    log = False\n
+
+    :type seq: list of str
+    :type w1: float
+    :type w2: float
+    :rtype: None
+    """
     bestPos = []
     bestScore = 0
     sumScore = 0
 
     print("w1:", w1, "w2:", w2)
 
-    for i in range(30):
-        print(i)
-        pos = MSABPSO(seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, f, w1, w2, False)
-        score = f(pos, seq, w1, w2)
-        sumScore = sumScore + score
-        if score > bestScore:
-            bestScore = score
-            bestPos = pos
+    e = []
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for i in range(30):
+            print("Created " + str(i))
+            e.append(executor.submit(MSABPSO, seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2, False))
+
+        for future in concurrent.futures.as_completed(e):
+            result = future.result()
+            print("A result: " + str(result))
+            score = aggregatedFunction(result, seq, w1, w2)
+            sumScore += score
+            print("\tScore: " + str(score))
+            print("\tSum Score: " + str(sumScore))
+            if score > bestScore:
+                bestPos = result
+                bestScore = score
+            print("\tBest Pos: " + str(bestPos))
+            print("\tBest Score: " + str(bestScore))
 
     print("Best Score:", bestScore)
     print("Average Score:", sumScore / 30)
+
+    print("Final Result: ")
     for string in posToStrings(bestPos, seq):
         print(string)
 
-
+'''
 print("test 1")
-testBPSOFuncWeight(test1, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test1, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test1, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test1, 0.6, 0.4)
+testBPSOFuncWeight(test1, 0.5, 0.5)
+testBPSOFuncWeight(test1, 0.3, 0.7)
 
 print("test 2")
-testBPSOFuncWeight(test2, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test2, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test2, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test2, 0.6, 0.4)
+testBPSOFuncWeight(test2, 0.5, 0.5)
+testBPSOFuncWeight(test2, 0.3, 0.7)
 
 print("test 3")
-testBPSOFuncWeight(test3, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test3, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test3, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test3, 0.6, 0.4)
+testBPSOFuncWeight(test3, 0.5, 0.5)
+testBPSOFuncWeight(test3, 0.3, 0.7)
 
 print("test 4")
-testBPSOFuncWeight(test4, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test4, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test4, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test4, 0.6, 0.4)
+testBPSOFuncWeight(test4, 0.5, 0.5)
+testBPSOFuncWeight(test4, 0.3, 0.7)
 
 print("test 5")
-testBPSOFuncWeight(test5, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test5, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test5, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test5, 0.6, 0.4)
+testBPSOFuncWeight(test5, 0.5, 0.5)
+testBPSOFuncWeight(test5, 0.3, 0.7)
 
 print("test 6")
-testBPSOFuncWeight(test6, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test6, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test6, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test6, 0.6, 0.4)
+testBPSOFuncWeight(test6, 0.5, 0.5)
+testBPSOFuncWeight(test6, 0.3, 0.7)
+'''
 
 print("test 7")
-testBPSOFuncWeight(test7, aggregatedFunction, 0.6, 0.4)
-testBPSOFuncWeight(test7, aggregatedFunction, 0.5, 0.5)
-testBPSOFuncWeight(test7, aggregatedFunction, 0.3, 0.7)
+testBPSOFuncWeight(test7, 0.6, 0.4)
+testBPSOFuncWeight(test7, 0.5, 0.5)
+testBPSOFuncWeight(test7, 0.3, 0.7)
