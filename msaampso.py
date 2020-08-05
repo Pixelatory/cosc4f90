@@ -267,7 +267,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
             logging.info("\n\tGlobal best pos: " + str(gBest["pos"]))
             logging.info("\tGlobal best fitness: " + str(fitness(gBest["bitstring"])))
 
-        print(it, fitness(gBest["bitstring"]))
+        #print(it, fitness(gBest["bitstring"]))
 
         it = it + 1
 
