@@ -131,20 +131,9 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
     pPositions = []
     pPersonalBests = []
     pVelocities = []
+    pBitStrings = []
 
-    def fitness(pos):
-        """
-        To test fitness in the AMPSO, first you use the position vector as the coefficients
-        of the angular modulation formula. Then, sample random values within genInterval with
-        the coefficients and use these values with the gen function. If the gen function
-        returns a value > 0, the bit is 1, otherwise 0.
-
-        :type pos: list of float
-        :param pos: Position vector
-        :rtype: float
-        :returns: Fitness value of position vector after creating bit string with angular modulation
-        """
-
+    def genBitString(pos):
         bitMatrix = []
         for i in range(len(seq)):
             bitMatrix.append([])
@@ -154,8 +143,22 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
                     bitMatrix[i].append(1)
                 else:
                     bitMatrix[i].append(0)
+        return bitMatrix
 
-        return f(bitMatrix, seq, w1, w2, False)
+    def fitness(bitstring):
+        """
+        To test fitness in the AMPSO, first you use the position vector as the coefficients
+        of the angular modulation formula. Then, sample random values within genInterval with
+        the coefficients and use these values with the gen function. If the gen function
+        returns a value > 0, the bit is 1, otherwise 0.
+
+        :type bitstring: list of (list of int)
+        :param bitstring: Two-dimensional binary matrix
+        :rtype: float
+        :returns: Fitness value of bit string
+        """
+
+        return f(bitstring, seq, w1, w2, False)
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -167,7 +170,11 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
     colLength: int = math.ceil(lSeq["len"] * 1.2)
 
-    gBestPos: List[float] = [0, 0, 0, 0]
+    gBest = {
+        "pos": [0, 0, 0, 0]
+    }
+
+    gBest["bitstring"] = genBitString(gBest["pos"])
 
     # Initializing the particles of swarm
     for i in range(n):
@@ -179,27 +186,30 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         position.append(random.uniform(0, 1))  # coefficient c
         position.append(random.uniform(-0.7, -0.9))  # coefficient d
 
+        bitstring = genBitString(position)
+
         pPositions.append(position)
         pPersonalBests.append(position)
         pVelocities.append(velocity)
+        pBitStrings.append(bitstring)
 
         if log:
             logging.info("Particle " + str(i) + ":")
             logging.info("\tPosition: " + str(position))
             logging.info("\tPersonal Best: " + str(position))
             logging.info("\tVelocity: " + str(velocity))
-            logging.info("\tFitness: " + str(fitness(position)))
+            logging.info("\tFitness: " + str(fitness(bitstring)))
 
-        if fitness(position) > fitness(gBestPos):
+        if fitness(bitstring) > fitness(gBest["bitstring"]):
             gBestPos = copy.deepcopy(position)
 
     if log:
-        logging.info("\nGlobal best pos after particle initialization: " + str(gBestPos))
-        logging.info("Global best fitness: " + str(fitness(gBestPos)) + "\n")
+        logging.info("\nGlobal best pos after particle initialization: " + str(gBest["pos"]))
+        logging.info("Global best fitness: " + str(fitness(gBest["bitstring"])) + "\n")
 
     # This is where the iterations begin
     it = 0  # iteration count
-    while it < maxIter and fitness(gBestPos) < term:
+    while it < maxIter and fitness(gBest["bitstring"]) < term:
         if log:
             logging.info("Iteration " + str(it))
 
@@ -218,7 +228,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
             for j in range(4):
                 pVelocities[i][j] = w * pVelocities[i][j] + \
                                     r1 * c1 * (pPersonalBests[i][j] - pPositions[i][j]) + \
-                                    r2 * c2 * (gBestPos[j] - pPositions[i][j])
+                                    r2 * c2 * (gBest["pos"][j] - pPositions[i][j])
 
                 # velocity clamping
                 if vmaxiterlimit < it:
@@ -229,31 +239,35 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
 
                 pPositions[i][j] = pPositions[i][j] + pVelocities[i][j]
 
-                if pPositions[i][j] > coefLimit[1]:
+                '''if pPositions[i][j] > coefLimit[1]:
                     pPositions[i][j] = coefLimit[1]
                 elif pPositions[i][j] < coefLimit[0]:
-                    pPositions[i][j] = coefLimit[0]
+                    pPositions[i][j] = coefLimit[0]'''
+
+            bitstring = genBitString(pPositions[i])
 
             # update personal best if applicable
-            if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
+            if fitness(bitstring) > fitness(pBitStrings[i]):  # update personal best if applicable
                 pPersonalBests[i] = copy.deepcopy(pPositions[i])
+                pBitStrings[i] = copy.deepcopy(bitstring)
 
             if log:
                 logging.info("\t\tPosition: " + str(pPositions[i]))
                 logging.info("\t\tPersonal Best: " + str(pPersonalBests[i]))
                 logging.info("\t\tVelocity: " + str(pVelocities[i]))
-                logging.info("\t\tFitness: " + str(fitness(pPositions[i])))
+                logging.info("\t\tFitness: " + str(fitness(pBitStrings[i])))
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):
-            if fitness(pPositions[i]) > fitness(gBestPos):  # update global best if applicable
-                gBestPos = copy.deepcopy(pPositions[i])
+            if fitness(pBitStrings[i]) > fitness(gBest["bitstring"]):  # update global best if applicable
+                gBest["pos"] = copy.deepcopy(pPositions[i])
+                gBest["bitstring"] = copy.deepcopy(pBitStrings[i])
 
         if log:
-            logging.info("\n\tGlobal best pos: " + str(gBestPos))
-            logging.info("\tGlobal best fitness: " + str(fitness(gBestPos)))
+            logging.info("\n\tGlobal best pos: " + str(gBest["pos"]))
+            logging.info("\tGlobal best fitness: " + str(fitness(gBest["bitstring"])))
 
-        print(it, fitness(gBestPos))
+        print(it, fitness(gBest["bitstring"]))
 
         it = it + 1
 
@@ -330,10 +344,10 @@ def testBPSOFuncWeight(seq, w1, w2):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
         e = []
-        for i in range(1):
+        for i in range(30):
             print("Created " + str(i))
             e.append(
-                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], [4.0, 4.0], 30, 0.729844, 1.49618, 1.49618, 4, 500,
+                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], [-4.0, 4.0], 30, 0.729844, 1.49618, 1.49618, 4, 500,
                                 float('inf'), 5000, aggregatedFunction, w1, w2, False))
 
         for future in concurrent.futures.as_completed(e):
@@ -352,9 +366,9 @@ def testBPSOFuncWeight(seq, w1, w2):
     print("Best Score:", bestScore)
     print("Average Score:", sumScore / 30)
 
-    print("Final Result: ")
-    for string in posToStrings(bestPos, seq):
-        print(string)
+    #print("Final Result: ")
+    #for string in posToStrings(bestPos, seq):
+        #print(string)
 
     print("Ended " + str(datetime.datetime.now().time()))
 

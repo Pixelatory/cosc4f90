@@ -58,7 +58,7 @@ def aggregatedFunction(position, seq, w1, w2, infeasible):
             elif not hitLastChar:
                 nI = nI + 1  # an indel was found before the last character in sequence
 
-        if infeasible and tmp != len(seq[i]):
+        if infeasible and tmp < len(seq[i]):
             return float('-inf')  # return a very small number, this solution is infeasible
 
     return (w1 * numOfAlignedChars(strings)) + (w2 * (nMax - nI))
