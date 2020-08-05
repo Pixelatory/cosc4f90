@@ -275,7 +275,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         logging.info("\n\tFinal global best pos: " + str(gBestPos))
         logging.info("\tFinal global best fitness: " + str(fitness(gBestPos)))
 
-    return gBestPos, fitness(gBestPos)
+    return gBest["pos"], fitness(gBest["bitstring"])
 
 
 def mkdir(path):
