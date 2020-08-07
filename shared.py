@@ -4,10 +4,12 @@
 
     Simply contains functions that may be shared between the MSABPSO and the MSAAMPSO
 """
-from typing import Dict
+from operator import le
+
+print(type(le))
 
 
-def aggregatedFunction(position, seq, w1, w2, infeasible):
+def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability):
     """A maximization aggregated fitness function that follows the following formula:
 
     f(x) = w1 * numOfAlignedChars(x) + w2 * (nMax - nI),\n
@@ -17,8 +19,8 @@ def aggregatedFunction(position, seq, w1, w2, infeasible):
     Note: if the position vector is invalid and infeasible is true, then -float('inf') is returned
 
 
-    :param position: position vector
-    :type position: list of (list of int)
+    :param bitmatrix: position vector
+    :type bitmatrix: list of (list of int)
     :param seq: sequences to be aligned
     :type seq: list of str
     :param w1: weight coefficient for number of aligned characters
@@ -31,63 +33,93 @@ def aggregatedFunction(position, seq, w1, w2, infeasible):
     :return: fitness value
     """
 
-    strings = posToStrings(position, seq)
+    if checkInfeasability and infeasible(bitmatrix, seq):
+        return -float('inf')
 
-    nMax = 0  # total number of indels
+    strings = posToStrings(bitmatrix, seq)
 
-    for bitlist in position:
-        for bit in bitlist:
-            if bit == 1:
-                nMax = nMax + 1
+    nMax = maxNumOfIndels(bitmatrix, seq)  # total number of indels
 
-    nI = 0  # number of indels before last char
-
-    # The small procedure below counts for nI,
-    # and also eliminates infeasible positions.
-    # If the number of 0 bits is more than the
-    # amount of characters for the sequence, then
-    # it's invalid. (return -infinity)
-    for i in range(len(seq)):
-        tmp = 0
-        hitLastChar = False
-        for bit in position[i]:
-            if bit == 0 and not hitLastChar:
-                tmp = tmp + 1
-                if tmp == len(seq[i]):
-                    hitLastChar = True
-            elif not hitLastChar:
-                nI = nI + 1  # an indel was found before the last character in sequence
-
-        if infeasible and tmp < len(seq[i]):
-            return float('-inf')  # return a very small number, this solution is infeasible
+    nI = numOfInsertedIndels(bitmatrix, seq)  # number of indels before last char
 
     return (w1 * numOfAlignedChars(strings)) + (w2 * (nMax - nI))
 
 
-def posToStrings(position, seq):
-    """Converts a list of sequences into a list of strings with indels, according to the position vector given.
+def numOfInsertedIndels(bitmatrix, seq):
+    # Remember: bit 0 means character from sequence
+    #           bit 1 means inserting indel
+    count = 0
 
-    :type position: list of (list of int)
+    for i in range(len(seq)):  # loop through each sequence
+        tmp = 0
+        hitLastChar = False  # whether the last char in the sequence was hit
+        for bit in bitmatrix[i]:
+            if bit == 0:
+                tmp += 1
+                if tmp == len(seq[i]):
+                    hitLastChar = True
+            else:
+                count += 1
+
+            if hitLastChar:
+                break
+
+    return count
+
+
+def numOfIndels(bitmatrix):
+    count = 0
+    for bitlist in bitmatrix:
+        for bit in bitlist:
+            if bit == 1:
+                count += 1
+    return count
+
+
+def maxNumOfIndels(bitmatrix, seq):
+    count = 0
+    for i in range(len(bitmatrix)):
+        count += len(bitmatrix[i]) - len(seq[i])
+    return count
+
+
+def infeasible(bitmatrix, seq):
+    for i in range(len(seq)):
+        count = 0
+        for bit in bitmatrix[i]:
+            if bit == 0:
+                count += 1
+
+        if count < len(seq[i]):
+            return True
+
+
+def posToStrings(bitmatrix, seq):
+    """Converts a list of sequences into a list of strings with indels, according to the bitmatrix given.
+
+    :type bitmatrix: list of (list of int)
     :type seq: list of str
     :rtype: list of str
     """
     result = []
     i = 0
-    for bitlist in position:
+    for bitlist in bitmatrix:
         j = 0
         result.append("")
         for bit in bitlist:
             if bit == 0 and j < len(seq[i]):
-                result[len(result) - 1] = result[len(result) - 1] + seq[i][j]
-                j = j + 1
+                result[len(result) - 1] += seq[i][j]
+                j += 1
             else:
-                result[len(result) - 1] = result[len(result) - 1] + "-"
+                result[len(result) - 1] += "-"
         i = i + 1
     return result
 
 
 def numOfAlignedChars(strings):
     """Counts the number of aligned characters in a list of strings.
+
+    Assumes that each string is of the same length.
 
     :type strings: list of str
     :rtype: int
@@ -100,12 +132,15 @@ def numOfAlignedChars(strings):
 
     result = 0
     charList = []
+
+    # The charList has a dictionary, and each dictionary in the list represents
+    # a column in each string
     for i in range(len(strings[0])):
         charList.append({})
         for string in strings:
             if string[i] != "-":
                 if string[i] in charList[i]:
-                    charList[i][string[i]] = charList[i][string[i]] + 1
+                    charList[i][string[i]] += 1
                 else:
                     charList[i][string[i]] = 1
 
@@ -114,6 +149,9 @@ def numOfAlignedChars(strings):
             if v > 1:
                 result = result + v
     return result
+
+
+print(numOfAlignedChars(posToStrings([[1, 0, 0, 0, 1], [1, 0, 1, 0, 0]], ["aa", "aa"])))
 
 
 def getLongestSeqDict(seq):
