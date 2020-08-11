@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 """
     Shared Functions
     Nick Aksamit 2020
@@ -6,7 +8,7 @@
 """
 
 
-def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability):
+def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability=False, op=None):
     """A maximization aggregated fitness function that follows the following formula:
 
     f(x) = w1 * numOfAlignedChars(x) + w2 * (nMax - nI),\n
@@ -17,23 +19,28 @@ def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability):
 
 
     :param bitmatrix: position vector
-    :type bitmatrix: list of (list of int)
+    :type bitmatrix: List[List[int]]
     :param seq: sequences to be aligned
-    :type seq: list of str
+    :type seq: List[str]
     :param w1: weight coefficient for number of aligned characters
     :type w1: float
     :param w2: weight coefficient for number of leading indels used
     :type w2: float
     :param checkInfeasability: whether or not a position can be infeasable
     :type checkInfeasability: bool
+    :param op: comparison of (count of 0 bits in row, length of sequence)
+    :type op: (int, int) -> bool
     :rtype: float
     :return: fitness value
     """
 
-    if checkInfeasability and infeasible(bitmatrix, seq):
+    if checkInfeasability and op is None:
+        raise Exception("Cannot check infeasability with a None operator")
+
+    if checkInfeasability and infeasible(bitmatrix, seq, op):
         return -float('inf')
 
-    strings = posToStrings(bitmatrix, seq)
+    strings = bitsToStrings(bitmatrix, seq)
 
     nMax = maxNumOfIndels(bitmatrix, seq)  # total number of indels
 
@@ -43,6 +50,12 @@ def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability):
 
 
 def numOfInsertedIndels(bitmatrix, seq):
+    """Counts the number of indels that are found before the last character in a sequence.
+
+    :type bitmatrix: List[List[int]]
+    :type seq: List[str]
+    :rtype: int
+    """
     # Remember: bit 0 means character from sequence
     #           bit 1 means inserting indel
     count = 0
@@ -65,6 +78,11 @@ def numOfInsertedIndels(bitmatrix, seq):
 
 
 def numOfIndels(bitmatrix):
+    """Counts the total number of indels according to the individual bits.
+
+    :type bitmatrix: List[List[int]]
+    :rtype: int
+    """
     count = 0
     for bitlist in bitmatrix:
         for bit in bitlist:
@@ -74,29 +92,58 @@ def numOfIndels(bitmatrix):
 
 
 def maxNumOfIndels(bitmatrix, seq):
+    """Counts the total number of indels according to the difference between
+    bitmatrix row length and sequence length.
+
+    Does not consider individual bits.
+
+    :type bitmatrix: List[List[int]]
+    :type seq: List[str]
+    :rtype: int
+    """
     count = 0
     for i in range(len(bitmatrix)):
         count += len(bitmatrix[i]) - len(seq[i])
     return count
 
 
-def infeasible(bitmatrix, seq):
+def infeasible(bitmatrix, seq, op):
+    """Determines if a bitmatrix and sequence combination is infeasible.
+
+    Counts the number of 0 bits in each row of the bitmatrix, and if it
+    doesn't match up with an operator comparison between the 0 bit count
+    and the length of the sequence, returns True for infeasibility.
+
+    The operator can be anything within the parameter format, however
+    usually it is >, <, =. For easy access to these use the operator
+    module.
+
+    :type op: (int, int) -> bool
+    :param op: comparison of (count of 0 bits in row, length of sequence)
+    :type bitmatrix: List[List[int]]
+    :type seq: List[str]
+
+    """
     for i in range(len(seq)):
         count = 0
         for bit in bitmatrix[i]:
             if bit == 0:
                 count += 1
 
-        if count < len(seq[i]):
+        if op(count, len(seq[i])):
             return True
 
 
-def posToStrings(bitmatrix, seq):
-    """Converts a list of sequences into a list of strings with indels, according to the bitmatrix given.
+def bitsToStrings(bitmatrix, seq):
+    """Converts a list of sequences into a list of strings with indels, according to the bitmatrix provided.
 
-    :type bitmatrix: list of (list of int)
-    :type seq: list of str
-    :rtype: list of str
+    Note: A bit of 0 means a character, and a bit of 1 means indel.
+    However, if the number of 0 bits exceeds the length of the sequence,
+    indels will be inserted instead.
+
+    :type bitmatrix: List[List[int]]
+    :type seq: List[str]
+    :rtype: List[str]
     """
     result = []
     i = 0
@@ -116,9 +163,9 @@ def posToStrings(bitmatrix, seq):
 def numOfAlignedChars(strings):
     """Counts the number of aligned characters in a list of strings.
 
-    Assumes that each string is of the same length.
+    **Assumes that each string is of the same length.**
 
-    :type strings: list of str
+    :type strings: List[str]
     :rtype: int
     """
     if len(strings) < 1:
@@ -149,6 +196,15 @@ def numOfAlignedChars(strings):
 
 
 def getLongestSeqDict(seq):
+    """ Returns a dictionary of information on the longest sequence within a list of sequences.
+
+    -> "idx": index of the longest sequence
+
+    -> "len": length of longest sequence
+
+    :rtype: Dict[str,int]
+    :type seq: List[str]
+    """
     lSeq = {  # longest sequence (index value and length)
         "idx": 0,
         "len": len(seq[0])
@@ -162,3 +218,15 @@ def getLongestSeqDict(seq):
             lSeq["len"] = s
 
     return lSeq
+
+
+test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]
+test2 = ["GAAAGTG", "CGACACTAGA", "CGCAGT"]
+test3 = ["TCATGT", "GCGAT", "CGTTGT", "TCGATT", "AGCACTAG", "GAGTAGAC"]
+test4 = ["DMHCMHDHMMDDMPM", "MMDCCDCCPCPCHPDPC"]
+test5 = ["SCWIISRSWIWCICCRI", "WCSIWSWIWWISRICWI", "WSWWIWRCCISWCISI", "RRCCWSIRRCSRWS", "SWCRWSWSWIIRISWI"]
+test6 = ["ATAHVVTAFIIWGSSGWWQFGIGVI", "IVISFVWQTIIIAGIIQFSHGAST"]
+test7 = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDWYDVICINIQW",
+         "FNADCDVYGENKETGLCAEFAENQWC", "IGGQQNLTFDLLCTIECWQYGI", "LEKQNCQNKNTTKFIIFLDDLV",
+         "QIQGLYFLANGKAVVCKNKYTTN", "QFGAGFDKAEIENCQDTYCLFQGWEQK", "GFDWETLWWLIKFYEFTGTICCWNN",
+         "GEDYWAGGVKIVGGICADKAEWKA"]

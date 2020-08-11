@@ -4,10 +4,11 @@ import os
 import datetime
 import copy
 import concurrent.futures
+import operator
 
 from typing import List
 
-from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, posToStrings, numOfInsertedIndels
+from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, test1
 
 '''
     AMPSO for the MSA Problem
@@ -17,7 +18,7 @@ from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, pos
 '''
 
 
-def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, log):
+def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
     """The AMPSO algorithm fitted for the MSA problem.
 
     :type seq: list of str
@@ -42,14 +43,13 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: (list of (list of int), list of str, float, float, bool) -> float
-    :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
+    :type f: (list of (list of int), list of str, float, float, bool, (int, int) -> bool) -> float
+    :param f: fitness function (bitmatrix, sequences, weight coefficient 1, weight coefficient 2, checkInfeasability,
+    operator)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
     :type w2: float
     :param w2: weight coefficient for number of leading indels used
-    :type log: bool
-    :param log: logging results of the MSABPSO
 
     :rtype: (list of int, list of (list of int))
     :returns: global best position
@@ -138,11 +138,9 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         :returns: Fitness value of bit string
         """
 
-        return f(bitString, seq, w1, w2, True)
+        return f(bitString, seq, w1, w2, True, operator.lt)
 
-    # Just some helper variables to make code more readable
-    numOfSeq = len(seq)  # number of sequences
-    lSeq = getLongestSeqDict(seq)
+    lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
     colLength: int = math.ceil(lSeq["len"] * 1.2)
@@ -249,16 +247,6 @@ def gen(x, a, b, c, d):
 
 
 # ----TESTING AREA----#
-test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]
-test2 = ["GAAAGTG", "CGACACTAGA", "CGCAGT"]
-test3 = ["TCATGT", "GCGAT", "CGTTGT", "TCGATT", "AGCACTAG", "GAGTAGAC"]
-test4 = ["DMHCMHDHMMDDMPM", "MMDCCDCCPCPCHPDPC"]
-test5 = ["SCWIISRSWIWCICCRI", "WCSIWSWIWWISRICWI", "WSWWIWRCCISWCISI", "RRCCWSIRRCSRWS", "SWCRWSWSWIIRISWI"]
-test6 = ["ATAHVVTAFIIWGSSGWWQFGIGVI", "IVISFVWQTIIIAGIIQFSHGAST"]
-test7 = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDWYDVICINIQW",
-         "FNADCDVYGENKETGLCAEFAENQWC", "IGGQQNLTFDLLCTIECWQYGI", "LEKQNCQNKNTTKFIIFLDDLV",
-         "QIQGLYFLANGKAVVCKNKYTTN", "QFGAGFDKAEIENCQDTYCLFQGWEQK", "GFDWETLWWLIKFYEFTGTICCWNN",
-         "GEDYWAGGVKIVGGICADKAEWKA"]
 
 
 def testBPSOFuncWeight(seq, w1, w2):
@@ -304,7 +292,7 @@ def testBPSOFuncWeight(seq, w1, w2):
             print("A result: " + str(result[0]))
 
             score = aggregatedFunction(result[1], seq, w1, w2, False)
-            aligned = numOfAlignedChars(posToStrings(result[1], seq))
+            aligned = numOfAlignedChars(bitsToStrings(result[1], seq))
             inserted = numOfInsertedIndels(result[1], seq)
 
             sumScore += score
@@ -328,7 +316,7 @@ def testBPSOFuncWeight(seq, w1, w2):
     print("Best Inserted:", bestInserted)
     print("Avg Inserted:", sumInserted / 30)
 
-    for string in posToStrings(bestBitString, seq):
+    for string in bitsToStrings(bestBitString, seq):
         print(string)
 
     print("Ended " + str(datetime.datetime.now().time()))
