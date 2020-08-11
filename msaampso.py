@@ -4,11 +4,11 @@ import os
 import datetime
 import copy
 import concurrent.futures
-import operator
 
+from operator import lt
 from typing import List
-
-from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, test1
+from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, \
+    test1, test2, test3, test4, test5, test6, test7
 
 '''
     AMPSO for the MSA Problem
@@ -20,39 +20,6 @@ from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bit
 
 def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
     """The AMPSO algorithm fitted for the MSA problem.
-
-    :type seq: list of str
-    :param seq: sequences to be aligned
-    :type genInterval: list of float
-    :param genInterval: the interval that is used within the angular modulation generation function
-    :type coefLimit: list of float
-    :param coefLimit: the max and min limit that all coefficients will be clamped to
-    :type n: int
-    :param n: swarm size (> 0)
-    :type w: float
-    :param w: inertia coefficient
-    :type c1: float
-    :param c1: cognitive coefficient
-    :type c2: float
-    :param c2: social coefficient
-    :type vmax: float
-    :param vmax: maximum velocity value (clamping) (set to float('inf') for no clamping)
-    :type vmaxiterlimit: int
-    :param vmaxiterlimit: Maximum iteration limit of clamping velocity values
-    :type term: float
-    :param term: termination criteria (set to float('inf') for no fitness termination)
-    :type maxIter: int
-    :param maxIter: maximum iteration limit (> 0)
-    :type f: (list of (list of int), list of str, float, float, bool, (int, int) -> bool) -> float
-    :param f: fitness function (bitmatrix, sequences, weight coefficient 1, weight coefficient 2, checkInfeasability,
-    operator)
-    :type w1: float
-    :param w1: weight coefficient for number of aligned characters
-    :type w2: float
-    :param w2: weight coefficient for number of leading indels used
-
-    :rtype: (list of int, list of (list of int))
-    :returns: global best position
 
     Initialization Process:
         Particle positions: each xi = U(coefLimit[0], coefLimit[1]), U meaning uniformly distributed random value
@@ -76,6 +43,40 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         Position clamping will be done for each coefficient within [coefLimit[0], coefLimit[1]]
 
         Angular modulation function will be within interval [genInterval[0],genInterval[1]]
+
+
+        :type seq: List[str]
+        :param seq: sequences to be aligned
+        :type genInterval: List[float]
+        :param genInterval: the interval that is used within the angular modulation generation function
+        :type coefLimit: List[float]
+        :param coefLimit: the max and min limit that all coefficients will be clamped to
+        :type n: int
+        :param n: swarm size (> 0)
+        :type w: float
+        :param w: inertia coefficient
+        :type c1: float
+        :param c1: cognitive coefficient
+        :type c2: float
+        :param c2: social coefficient
+        :type vmax: float
+        :param vmax: maximum velocity value (clamping) (set to float('inf') for no clamping)
+        :type vmaxiterlimit: int
+        :param vmaxiterlimit: Maximum iteration limit of clamping velocity values
+        :type term: float
+        :param term: termination criteria (set to float('inf') for no fitness termination)
+        :type maxIter: int
+        :param maxIter: maximum iteration limit (> 0)
+        :type f: (List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float
+        :param f: fitness function (bitmatrix, sequences, weight coefficient 1, weight coefficient 2, checkInfeasability,
+        operator)
+
+        :type w1: float
+        :param w1: weight coefficient for number of aligned characters
+        :type w2: float
+        :param w2: weight coefficient for number of leading indels used
+        :rtype: (List[float], List[List[int]])
+        :returns: (global best position, global best bitmatrix)
     """
 
     # Checking for trivial errors first
@@ -113,32 +114,37 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
     pVelocities = []
     pBitStrings = []
 
-    def genBitString(pos):
-        bitMatrix = []
+    def genBitMatrix(pos):
+        """Generates a bit matrix given the position vector and the angular modulation formula (gen function).
+
+        :type pos: List[float]
+        :rtype: List[List[int]]
+        """
+        bitmatrix = []
         for li in range(len(seq)):
-            bitMatrix.append([])
+            bitmatrix.append([])
             for ti in range(colLength):
                 val = gen(random.uniform(genInterval[0], genInterval[1]), pos[0], pos[1], pos[2], pos[3])
                 if val > 0:
-                    bitMatrix[li].append(1)
+                    bitmatrix[li].append(1)
                 else:
-                    bitMatrix[li].append(0)
-        return bitMatrix
+                    bitmatrix[li].append(0)
+        return bitmatrix
 
-    def fitness(bitString):
+    def fitness(bitmatrix):
         """
         To test fitness in the AMPSO, first you use the position vector as the coefficients
         of the angular modulation formula. Then, sample random values within genInterval with
         the coefficients and use these values with the gen function. If the gen function
         returns a value > 0, the bit is 1, otherwise 0.
 
-        :type bitString: list of (list of int)
-        :param bitString: Two-dimensional binary matrix
+        :type bitmatrix: List[List[int]]
+        :param bitmatrix: Two-dimensional binary matrix
         :rtype: float
         :returns: Fitness value of bit string
         """
 
-        return f(bitString, seq, w1, w2, True, operator.lt)
+        return f(bitmatrix, seq, w1, w2, True, lt)
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -149,7 +155,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         "pos": [0, 0, 0, 0]
     }
 
-    gBest["bitstring"] = genBitString(gBest["pos"])
+    gBest["bitstring"] = genBitMatrix(gBest["pos"])
 
     # Initializing the particles of swarm
     for i in range(n):
@@ -161,7 +167,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         position.append(random.uniform(0, 1))  # coefficient c
         position.append(random.uniform(-0.7, -0.9))  # coefficient d
 
-        bitstring = genBitString(position)
+        bitstring = genBitMatrix(position)
 
         pPositions.append(position)
         pPersonalBests.append(position)
@@ -202,7 +208,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
                 elif pPositions[i][j] < coefLimit[0]:
                     pPositions[i][j] = coefLimit[0]'''
 
-            bitstring = genBitString(pPositions[i])
+            bitstring = genBitMatrix(pPositions[i])
 
             # update personal best if applicable
             if fitness(bitstring) > fitness(pBitStrings[i]):  # update personal best if applicable
@@ -249,7 +255,7 @@ def gen(x, a, b, c, d):
 # ----TESTING AREA----#
 
 
-def testBPSOFuncWeight(seq, w1, w2):
+def testAMPSOFuncWeight(seq, w1, w2):
     """Just a testing function for the BPSO on an MSA problem  (dynamic w1 and w2 values)\n
     n = 30\n
     w = 0.9\n
@@ -323,6 +329,36 @@ def testBPSOFuncWeight(seq, w1, w2):
 
 
 print("test 1")
-testBPSOFuncWeight(test1, 0.6, 0.4)
-testBPSOFuncWeight(test1, 0.5, 0.5)
-testBPSOFuncWeight(test1, 0.3, 0.7)
+testAMPSOFuncWeight(test1, 0.6, 0.4)
+testAMPSOFuncWeight(test1, 0.5, 0.5)
+testAMPSOFuncWeight(test1, 0.3, 0.7)
+
+print("test 2")
+testAMPSOFuncWeight(test2, 0.6, 0.4)
+testAMPSOFuncWeight(test2, 0.5, 0.5)
+testAMPSOFuncWeight(test2, 0.3, 0.7)
+
+print("test 3")
+testAMPSOFuncWeight(test3, 0.6, 0.4)
+testAMPSOFuncWeight(test3, 0.5, 0.5)
+testAMPSOFuncWeight(test3, 0.3, 0.7)
+
+print("test 4")
+testAMPSOFuncWeight(test4, 0.6, 0.4)
+testAMPSOFuncWeight(test4, 0.5, 0.5)
+testAMPSOFuncWeight(test4, 0.3, 0.7)
+
+print("test 5")
+testAMPSOFuncWeight(test5, 0.6, 0.4)
+testAMPSOFuncWeight(test5, 0.5, 0.5)
+testAMPSOFuncWeight(test5, 0.3, 0.7)
+
+print("test 6")
+testAMPSOFuncWeight(test6, 0.6, 0.4)
+testAMPSOFuncWeight(test6, 0.5, 0.5)
+testAMPSOFuncWeight(test6, 0.3, 0.7)
+
+print("test 7")
+testAMPSOFuncWeight(test7, 0.6, 0.4)
+testAMPSOFuncWeight(test7, 0.5, 0.5)
+testAMPSOFuncWeight(test7, 0.3, 0.7)

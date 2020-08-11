@@ -5,7 +5,9 @@ import datetime
 import logging
 import concurrent.futures
 import copy
-from shared import aggregatedFunction, posToStrings, getLongestSeqDict
+from typing import List
+from operator import eq
+from shared import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, test7
 
 '''
     BPSO for the MSA Problem
@@ -27,7 +29,7 @@ from shared import aggregatedFunction, posToStrings, getLongestSeqDict
 def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, log):
     """The BPSO algorithm fitted for the MSA problem.
 
-    :type seq: list of str
+    :type seq: List[str]
     :param seq: sequences to be aligned
     :type n: int
     :param n: swarm size (> 0)
@@ -45,7 +47,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: (list of (list of int), list of str, float, float, bool) -> float
+    :type f: (List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float
     :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
@@ -54,7 +56,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     :type log: bool
     :param log: logging results of the MSABPSO
 
-    :rtype: list of (list of int)
+    :rtype: List[List[int]]
     :returns: global best position
 
     Initialization Process:
@@ -110,12 +112,12 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
 
     def fitness(pos):
         """
-        :type pos: list of (list of int)
+        :type pos: List[List[int]]
         :param pos: Position vector
         :rtype: float
         :returns: Fitness value of position vector
         """
-        return f(pos, seq, w1, w2, True)
+        return f(pos, seq, w1, w2, True, eq)
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -251,18 +253,6 @@ def Sigmoid(x):
 
 
 # ----TESTING AREA----#
-test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]
-test2 = ["GAAAGTG", "CGACACTAGA", "CGCAGT"]
-test3 = ["TCATGT", "GCGAT", "CGTTGT", "TCGATT", "AGCACTAG", "GAGTAGAC"]
-test4 = ["DMHCMHDHMMDDMPM", "MMDCCDCCPCPCHPDPC"]
-test5 = ["SCWIISRSWIWCICCRI", "WCSIWSWIWWISRICWI", "WSWWIWRCCISWCISI", "RRCCWSIRRCSRWS", "SWCRWSWSWIIRISWI"]
-test6 = ["ATAHVVTAFIIWGSSGWWQFGIGVI", "IVISFVWQTIIIAGIIQFSHGAST"]
-test7 = ["CDGAGIATDAWNFWAVDECVIYQIYI", "AEYGKYITDWCQLNWNCWKFTIDQGL", "GLFKLNYGDWYDVICINIQW",
-         "FNADCDVYGENKETGLCAEFAENQWC", "IGGQQNLTFDLLCTIECWQYGI", "LEKQNCQNKNTTKFIIFLDDLV",
-         "QIQGLYFLANGKAVVCKNKYTTN", "QFGAGFDKAEIENCQDTYCLFQGWEQK", "GFDWETLWWLIKFYEFTGTICCWNN",
-         "GEDYWAGGVKIVGGICADKAEWKA"]
-
-
 def testBPSOFuncWeight(seq, w1, w2):
     """Just a testing function for the BPSO on an MSA problem  (dynamic w1 and w2 values)\n
     n = 30\n
@@ -275,7 +265,7 @@ def testBPSOFuncWeight(seq, w1, w2):
     f = aggregatedFunction\n
     log = False\n
 
-    :type seq: list of str
+    :type seq: List[str]
     :type w1: float
     :type w2: float
     :rtype: None
@@ -312,11 +302,10 @@ def testBPSOFuncWeight(seq, w1, w2):
     print("Average Score:", sumScore / 30)
 
     print("Final Result: ")
-    for string in posToStrings(bestPos, seq):
+    for string in bitsToStrings(bestPos, seq):
         print(string)
 
 
-'''
 print("test 1")
 testBPSOFuncWeight(test1, 0.6, 0.4)
 testBPSOFuncWeight(test1, 0.5, 0.5)
@@ -346,7 +335,6 @@ print("test 6")
 testBPSOFuncWeight(test6, 0.6, 0.4)
 testBPSOFuncWeight(test6, 0.5, 0.5)
 testBPSOFuncWeight(test6, 0.3, 0.7)
-'''
 
 print("test 7")
 testBPSOFuncWeight(test7, 0.6, 0.4)
