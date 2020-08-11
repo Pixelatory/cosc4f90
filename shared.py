@@ -4,9 +4,6 @@
 
     Simply contains functions that may be shared between the MSABPSO and the MSAAMPSO
 """
-from operator import le
-
-print(type(le))
 
 
 def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability):
@@ -27,8 +24,8 @@ def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability):
     :type w1: float
     :param w2: weight coefficient for number of leading indels used
     :type w2: float
-    :param infeasible: whether or not a position can be infeasable
-    :type infeasible: bool
+    :param checkInfeasability: whether or not a position can be infeasable
+    :type checkInfeasability: bool
     :rtype: float
     :return: fitness value
     """
@@ -149,9 +146,6 @@ def numOfAlignedChars(strings):
             if v > 1:
                 result = result + v
     return result
-
-
-print(numOfAlignedChars(posToStrings([[1, 0, 0, 0, 1], [1, 0, 1, 0, 0]], ["aa", "aa"])))
 
 
 def getLongestSeqDict(seq):
