@@ -1,10 +1,13 @@
-from typing import Dict, List
+import random
+import math
+import os
+from typing import Dict, List, Tuple
 
 """
-    Shared Functions
+    Utility
     Nick Aksamit 2020
 
-    Simply contains functions that may be shared between the MSABPSO and the MSAAMPSO
+    Simply contains functions that may be shared between the code pieces.
 """
 
 
@@ -218,6 +221,79 @@ def getLongestSeqDict(seq):
             lSeq["len"] = s
 
     return lSeq
+
+
+def genBitMatrix(pos, seq, colLength, genInterval):
+    """Generates a bit matrix given the position vector and the angular modulation formula (gen function).
+
+    :type pos: List[float]
+    :type genInterval: List[float]
+    :type seq: List[str]
+    :type colLength: int
+    :rtype: List[List[int]]
+    """
+    bitmatrix = []
+    for li in range(len(seq)):
+        bitmatrix.append([])
+        for ti in range(colLength):
+            val = gen(random.uniform(genInterval[0], genInterval[1]), pos[0], pos[1], pos[2], pos[3])
+            if val > 0:
+                bitmatrix[li].append(1)
+            else:
+                bitmatrix[li].append(0)
+    return bitmatrix
+
+
+def gen(x, a, b, c, d):
+    """
+    Angular Modulation Generation Function
+
+    :type x: float
+    :param x: Randomly sampled value within a range
+    :type a: float
+    :param a: horizontal shift coefficient
+    :type b: float
+    :param b: frequency coefficient
+    :type c: float
+    :param c: frequency coefficient
+    :type d: float
+    :param d: vertical shift coefficient
+    :rtype: float
+    """
+    return math.sin(2 * math.pi * (x - a) * b * math.cos(2 * math.pi * c * (x - a))) + d
+
+
+def mkdir(path):
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        pass
+
+
+def dominates(bs1, bs2):
+    """Checks if bs1 dominates bs2.
+
+    :type bs1: List[List[int]]
+    :type bs2: List[List[int]]
+    :rtype: bool
+    """
+
+def CrowdingDistance(PF, f):
+    """
+    :type PF: List[List[float]]
+    :type f: List[(List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float]
+    """
+
+    n = len(PF)
+    # tRes format: [pos vector, index, distance]
+    tRes = [[PF[i], i, 0] for i in range(n)]
+
+    for i in range(len(f)):
+        tRes.sort(key=lambda x: f[i](x[0]))  # sort tRes in asc order by fitness
+        tRes[0][2] = tRes[n - 1][2] = float('inf')  # set first and last to infinite distance
+
+        for j in range(2, n - 1):
+            tRes[j][2] += f[i](tRes[j + 1][0]) - f[i](tRes[j - 1][0])
 
 
 test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]

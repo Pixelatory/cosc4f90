@@ -1,21 +1,20 @@
 import random
 import math
-import os
 import datetime
 import copy
 import concurrent.futures
 
 from operator import lt
 from typing import List
-from shared import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, \
-    test1, test2, test3, test4, test5, test6, test7
+from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, \
+    genBitMatrix, test1, test2, test3, test4, test5, test6, test7
 
-'''
+"""
     AMPSO for the MSA Problem
     Nick Aksamit 2020
 
     Acknowledgement goes towards: 
-'''
+"""
 
 
 def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
@@ -114,23 +113,6 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
     pVelocities = []
     pBitStrings = []
 
-    def genBitMatrix(pos):
-        """Generates a bit matrix given the position vector and the angular modulation formula (gen function).
-
-        :type pos: List[float]
-        :rtype: List[List[int]]
-        """
-        bitmatrix = []
-        for li in range(len(seq)):
-            bitmatrix.append([])
-            for ti in range(colLength):
-                val = gen(random.uniform(genInterval[0], genInterval[1]), pos[0], pos[1], pos[2], pos[3])
-                if val > 0:
-                    bitmatrix[li].append(1)
-                else:
-                    bitmatrix[li].append(0)
-        return bitmatrix
-
     def fitness(bitmatrix):
         """
         To test fitness in the AMPSO, first you use the position vector as the coefficients
@@ -155,7 +137,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         "pos": [0, 0, 0, 0]
     }
 
-    gBest["bitstring"] = genBitMatrix(gBest["pos"])
+    gBest["bitstring"] = genBitMatrix(gBest["pos"], seq, colLength, genInterval)
 
     # Initializing the particles of swarm
     for i in range(n):
@@ -167,7 +149,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         position.append(random.uniform(0, 1))  # coefficient c
         position.append(random.uniform(-0.7, -0.9))  # coefficient d
 
-        bitstring = genBitMatrix(position)
+        bitstring = genBitMatrix(position, seq, colLength, genInterval)
 
         pPositions.append(position)
         pPersonalBests.append(position)
@@ -208,7 +190,7 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
                 elif pPositions[i][j] < coefLimit[0]:
                     pPositions[i][j] = coefLimit[0]'''
 
-            bitstring = genBitMatrix(pPositions[i])
+            bitstring = genBitMatrix(pPositions[i], seq, colLength, genInterval)
 
             # update personal best if applicable
             if fitness(bitstring) > fitness(pBitStrings[i]):  # update personal best if applicable
@@ -224,32 +206,6 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         it = it + 1
 
     return gBest["pos"], gBest["bitstring"]
-
-
-def mkdir(path):
-    try:
-        os.mkdir(path)
-    except FileExistsError:
-        pass
-
-
-def gen(x, a, b, c, d):
-    """
-    Angular Modulation Generation Function
-
-    :type x: float
-    :param x: Randomly sampled value within a range
-    :type a: float
-    :param a: horizontal shift coefficient
-    :type b: float
-    :param b: frequency coefficient
-    :type c: float
-    :param c: frequency coefficient
-    :type d: float
-    :param d: vertical shift coefficient
-    :rtype: float
-    """
-    return math.sin(2 * math.pi * (x - a) * b * math.cos(2 * math.pi * c * (x - a))) + d
 
 
 # ----TESTING AREA----#

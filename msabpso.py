@@ -7,9 +7,9 @@ import concurrent.futures
 import copy
 from typing import List
 from operator import eq
-from shared import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, test7
+from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, test7
 
-'''
+"""
     BPSO for the MSA Problem
     Nick Aksamit 2020
         
@@ -23,7 +23,7 @@ from shared import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, 
     
     1. Helped me reference that the BPSO works correctly to this person's studies
     2. Helped me reference how the MSA problem should be represented in a BPSO format
-'''
+"""
 
 
 def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, log):
