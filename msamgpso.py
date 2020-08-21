@@ -2,8 +2,7 @@ import math
 import random
 import copy
 from typing import List, Tuple
-from operator import lt
-from util import getLongestSeqDict, genBitMatrix
+from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsertedIndels, bitsToStrings
 
 """
     MGPSO for the MSA Problem
@@ -13,7 +12,9 @@ from util import getLongestSeqDict, genBitMatrix
 """
 
 
-def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
+# TODO: find a way to generalize the objective functions if possible. If not then I mean hard-coded is still alright.
+
+def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlimit, term, maxIter):
     # Checking for trivial errors first
     if n < 1:
         raise Exception("Swarm size cannot be < 1")
@@ -31,10 +32,6 @@ def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlim
         raise Exception("genInterval must be a list")
     elif len(genInterval) < 2:
         raise Exception("genInterval list must be at least of size 2")
-    elif type(f) is not list:
-        raise Exception("f must be a list of callable functions")
-    elif len(term) != len(f):
-        raise Exception("termination list must be same size as function list")
 
     # sort coefLimit and genInterval, just makes life easier
     if coefLimit[0] > coefLimit[1]:
@@ -48,37 +45,85 @@ def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlim
         genInterval[1] = tmp
 
     # Initialize the data containers
+    f = [numOfAlignedChars, numOfInsertedIndels]  # objective functions
     pPositions: List[List[List[float]]] = []  # particle positions
     pPersonalBests: List[List[List[float]]] = []  # particle personal best position
     pVelocities: List[List[List[float]]] = []  # particle velocities
     pBitStrings: List[List[List[List[int]]]] = []  # particle bit strings
+    sArchive: List[List[List[float], List[List[int], float]]] = []  # swarm archive (the pareto front)
 
-    # swarm archive
-    sArchive = []  # TODO: figure out the archive
+    def dominates(bm1, bm2):
+        better = False
+        for x in range(len(f)):
+            if x == 0:  # numOfAlignedChars
+                strings1 = bitsToStrings(bm1, seq)
+                strings2 = bitsToStrings(bm2, seq)
+                res1 = numOfAlignedChars(strings1)
+                res2 = numOfAlignedChars(strings2)
+                if res1 < res2:
+                    return False
+                elif res1 > res2:
+                    better = True
+            else:  # numOfInsertedIndels
+                res1 = numOfInsertedIndels(bm1, seq)
+                res2 = numOfInsertedIndels(bm2, seq)
+                if res1 > res2:
+                    return False
+                elif res1 < res2:
+                    better = True
+        return better
 
     def addToArchive(x):
         """If possible, adds solution x to archive a.
 
         :type x: Tuple[List[float], List[List[int]]]
+        :rtype: None
         """
+
+        global sArchive
+        aDominated = []  # all the archive components that are dominated by x
+
+        # First, check that this new solution dominates every archive solution
         for s in sArchive:
+            if not dominates(x[1], s[1]):
+                return
+            else:
+                aDominated.append(s)
 
+        # When the function reaches here, it's safe to say the solution dominates.
+        # So, let's add it to archive.
+        sArchive.append(copy.deepcopy([x[0], x[1], 0.0]))
 
-    def fitness(bitmatrix, f):
-        """
-        To test fitness in the AMPSO, first you use the position vector as the coefficients
-        of the angular modulation formula. Then, sample random values within genInterval with
-        the coefficients and use these values with the gen function. If the gen function
-        returns a value > 0, the bit is 1, otherwise 0.
+        # Next, after adding it remove all the archive elements that x dominates
+        sArchive = [x for x in sArchive if x not in aDominated]
 
-        :type bitmatrix: List[List[int]]
-        :param bitmatrix: Two-dimensional binary matrix
-        :type f: (List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float
-        :rtype: float
-        :returns: Fitness value of bit string
-        """
+        if len(sArchive) > len(f) * n:
+            removeCrowdedSolution()
 
-        return f(bitmatrix, seq, w1, w2, True, lt)
+    def updateCrowdingDistance():
+        """Calculates the crowding distance of each archive solution."""
+        for i in range(len(f)):
+            if i == 0:  # numOfAlignedChars
+                sArchive.sort(key=lambda x: numOfAlignedChars(bitsToStrings(x[1], seq)))  # sort tRes in asc order
+            else:  # numOfInsertedIndels
+                sArchive.sort(key=lambda x: numOfInsertedIndels(x[1], seq))
+
+            sArchive[0][2] = sArchive[len(sArchive) - 1][2] = float('inf')  # set first and last to infinite distance
+
+            for j in range(1, len(sArchive) - 2):
+                if sArchive[j][2] != float('inf'):
+                    sArchive[j][2] += sArchive[j+1][2] - sArchive[j-1][2]
+
+    def removeCrowdedSolution():
+        """Removes the most crowded solution in the archive."""
+        updateCrowdingDistance()
+        minIdx = 0
+
+        for i in range(len(sArchive)):
+            if sArchive[i][2] < sArchive[minIdx][0]:
+                minIdx = i
+
+        del sArchive[minIdx]
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -117,17 +162,25 @@ def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlim
             pVelocities[i].append(velocity)
             pBitStrings[i].append(bitstring)
 
-            if fitness(bitstring, f[i]) > fitness(gBest[i]["bitstring"], f[i]):
-                gBest[i]["pos"] = copy.deepcopy(position)
-                gBest[i]["bitstring"] = copy.deepcopy(bitstring)
+            if i == 0:  # numOfAlignedChars
+                strings = bitsToStrings(bitstring, seq)
+                gBestStrings = bitsToStrings(gBest[i]["bitstring"], seq)
+                if f[i](strings) > f[i](gBestStrings):
+                    gBest[i]["pos"] = copy.deepcopy(position)
+                    gBest[i]["bitstring"] = copy.deepcopy(bitstring)
+            else:  # numOfInsertedIndels
+                if f[i](bitstring, seq) < f[i](gBest[i]["bitstring"], seq):
+                    gBest[i]["pos"] = copy.deepcopy(position)
+                    gBest[i]["bitstring"] = copy.deepcopy(bitstring)
 
     # This is where the iterations begin
     it = 0  # iteration count
     while it < maxIter:
         # if the termination criteria is met, then stop the PSO and return values
-        for i in range(len(gBest)):
-            if fitness(gBest[i]["bitstring"], f[i]) > term[i]:
-                return True
+        if f[0](bitsToStrings(gBest[0]["bitstring"], seq)) > term[0]:
+            return True
+        elif f[1](gBest[1]["bitstring"], seq) > term[1]:
+            return True
 
         # Update each particle's velocity, position, and personal best
         for i in range(len(f)):
@@ -161,16 +214,30 @@ def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlim
                 bitstring = genBitMatrix(pPositions[i][j], seq, colLength, genInterval)
 
                 # update personal best if applicable
-                if fitness(bitstring, f[i]) > fitness(pBitStrings[i][j], f[i]):  # update personal best if applicable
-                    pPersonalBests[i][j] = copy.deepcopy(pPositions[i][j])
-                    pBitStrings[i][j] = copy.deepcopy(bitstring)
+                if i == 0:  # numOfAlignedChars
+                    strings = bitsToStrings(bitstring, seq)
+                    pBestStrings = bitsToStrings(pBitStrings[i][j], seq)
+                    if f[i](strings) > f[i](pBestStrings):
+                        pPersonalBests[i][j] = copy.deepcopy(pPositions[i][j])
+                        pBitStrings[i][j] = copy.deepcopy(bitstring)
+                else:  # numOfInsertedIndels
+                    if f[i](bitstring, seq) < f[i](pBitStrings[i][j], seq):
+                        pPersonalBests[i][j] = copy.deepcopy(pPositions[i][j])
+                        pBitStrings[i][j] = copy.deepcopy(bitstring)
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(len(f)):
             for j in range(n):
                 # update global best if applicable
-                if fitness(pBitStrings[i][j], f[i]) > fitness(gBest[i]["bitstring"], f[i]):
-                    gBest[i]["pos"] = copy.deepcopy(pPositions[i][j])
-                    gBest[i]["bitstring"] = copy.deepcopy(pBitStrings[i][j])
+                if i == 0:  # numOfAlignedChars
+                    strings = bitsToStrings(pBitStrings[i][j], seq)
+                    gBestStrings = bitsToStrings(gBest[i]["bitstring"], seq)
+                    if f[i](strings) > f[i](gBestStrings):
+                        gBest[i]["pos"] = copy.deepcopy(pPositions[i][j])
+                        gBest[i]["bitstring"] = copy.deepcopy(pBitStrings[i][j])
+                else:  # numOfInsertedIndels
+                    if f[i](pBitStrings[i][j], seq) < f[i](gBest[i]["bitstring"], seq):
+                        gBest[i]["pos"] = copy.deepcopy(pPositions[i][j])
+                        gBest[i]["bitstring"] = copy.deepcopy(pBitStrings[i][j])
 
         it = it + 1

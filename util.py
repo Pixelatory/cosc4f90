@@ -270,32 +270,6 @@ def mkdir(path):
         pass
 
 
-def dominates(bs1, bs2):
-    """Checks if bs1 dominates bs2.
-
-    :type bs1: List[List[int]]
-    :type bs2: List[List[int]]
-    :rtype: bool
-    """
-
-def CrowdingDistance(PF, f):
-    """
-    :type PF: List[List[float]]
-    :type f: List[(List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float]
-    """
-
-    n = len(PF)
-    # tRes format: [pos vector, index, distance]
-    tRes = [[PF[i], i, 0] for i in range(n)]
-
-    for i in range(len(f)):
-        tRes.sort(key=lambda x: f[i](x[0]))  # sort tRes in asc order by fitness
-        tRes[0][2] = tRes[n - 1][2] = float('inf')  # set first and last to infinite distance
-
-        for j in range(2, n - 1):
-            tRes[j][2] += f[i](tRes[j + 1][0]) - f[i](tRes[j - 1][0])
-
-
 test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]
 test2 = ["GAAAGTG", "CGACACTAGA", "CGCAGT"]
 test3 = ["TCATGT", "GCGAT", "CGTTGT", "TCGATT", "AGCACTAG", "GAGTAGAC"]
