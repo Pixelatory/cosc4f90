@@ -14,7 +14,7 @@ from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsert
 
 # TODO: find a way to generalize the objective functions if possible. If not then I mean hard-coded is still alright.
 
-def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlimit, term, maxIter):
+def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
     # Checking for trivial errors first
     if n < 1:
         raise Exception("Swarm size cannot be < 1")
@@ -104,7 +104,7 @@ def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlim
         """Calculates the crowding distance of each archive solution."""
         for i in range(len(f)):
             if i == 0:  # numOfAlignedChars
-                sArchive.sort(key=lambda x: numOfAlignedChars(bitsToStrings(x[1], seq)))  # sort tRes in asc order
+                sArchive.sort(key=lambda x: numOfAlignedChars(bitsToStrings(x[1], seq)), reverse=True)
             else:  # numOfInsertedIndels
                 sArchive.sort(key=lambda x: numOfInsertedIndels(x[1], seq))
 
@@ -120,10 +120,18 @@ def MSAMGPSO(seq, genInterval, coefLimit, n, w, c1, c2, c3, l, vmax, vmaxiterlim
         minIdx = 0
 
         for i in range(len(sArchive)):
-            if sArchive[i][2] < sArchive[minIdx][0]:
+            if sArchive[i][2] < sArchive[minIdx][2]:
                 minIdx = i
 
         del sArchive[minIdx]
+
+    def archiveGuide():
+        """Uses tournament selection where k is the number of particles to choose.
+
+        Out of the k possible particles randomly selcted, the least crowded particle wins the tournament.
+        """
+
+
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
