@@ -17,11 +17,11 @@ from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsT
 """
 
 
-def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
+def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
     """The AMPSO algorithm fitted for the MSA problem.
 
     Initialization Process:
-        Particle positions: each xi = U(coefLimit[0], coefLimit[1]), U meaning uniformly distributed random value
+        Particle positions: each xi = TODO replace this
 
         Particle personal best: Same as initialized position
 
@@ -39,17 +39,13 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
 
         Position Update: x(t+1) = x(t) + v(t+1)
 
-        Position clamping will be done for each coefficient within [coefLimit[0], coefLimit[1]]
-
-        Angular modulation function will be within interval [genInterval[0],genInterval[1]]
+        Angular modulation function will be within interval [genInterval[0], genInterval[1]]
 
 
         :type seq: List[str]
         :param seq: sequences to be aligned
         :type genInterval: List[float]
         :param genInterval: the interval that is used within the angular modulation generation function
-        :type coefLimit: List[float]
-        :param coefLimit: the max and min limit that all coefficients will be clamped to
         :type n: int
         :param n: swarm size (> 0)
         :type w: float
@@ -87,21 +83,12 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
         raise Exception("maxIter cannot be < 1")
     elif maxIter == float('inf') and term == float('inf'):
         raise Exception("Maximum iterations and termination fitness are both infinite!")
-    elif type(coefLimit) is not list:
-        raise Exception("coefLimit must be a list")
-    elif len(coefLimit) < 2:
-        raise Exception("coefLimit list must be at least of size 2")
     elif type(genInterval) is not list:
         raise Exception("genInterval must be a list")
     elif len(genInterval) < 2:
         raise Exception("genInterval list must be at least of size 2")
 
-    # sort coefLimit and genInterval, just makes life easier
-    if coefLimit[0] > coefLimit[1]:
-        tmp = coefLimit[0]
-        coefLimit[0] = coefLimit[1]
-        coefLimit[1] = tmp
-
+    # sort genInterval, just makes life easier
     if genInterval[0] > genInterval[1]:
         tmp = genInterval[0]
         genInterval[0] = genInterval[1]
@@ -184,11 +171,6 @@ def MSAAMPSO(seq, genInterval, coefLimit, n, w, c1, c2, vmax, vmaxiterlimit, ter
                         pVelocities[i][j] = -vmax
 
                 pPositions[i][j] = pPositions[i][j] + pVelocities[i][j]
-
-                '''if pPositions[i][j] > coefLimit[1]:
-                    pPositions[i][j] = coefLimit[1]
-                elif pPositions[i][j] < coefLimit[0]:
-                    pPositions[i][j] = coefLimit[0]'''
 
             bitstring = genBitMatrix(pPositions[i], seq, colLength, genInterval)
 
