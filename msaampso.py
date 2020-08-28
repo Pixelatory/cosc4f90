@@ -3,6 +3,7 @@ import math
 import datetime
 import copy
 import concurrent.futures
+import logging
 
 from operator import lt
 from typing import List
@@ -219,20 +220,23 @@ def testAMPSOFuncWeight(seq, w1, w2):
     bestAligned = 0
     bestBitString = []
 
+    logging.info("Started " + str(datetime.datetime.now().time()))
+    logging.info("w1: " + str(w1) + " w2: " + str(w2))
     print("Started " + str(datetime.datetime.now().time()))
     print("w1:", w1, "w2:", w2)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
         e = []
         for i in range(30):
-            print("Created " + str(i))
+            # print("Created " + str(i))
             e.append(
-                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], [-float('inf'), float('inf')], 30, 0.729844, 1.49618,
-                                1.49618, float('inf'), 500, float('inf'), 5000, aggregatedFunction, w1, w2, False))
+                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], 30, 0.729844, 1.49618,
+                                1.49618, float('inf'), 500, float('inf'), 5000, aggregatedFunction, w1, w2))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
 
+            logging.info("A result: " + str(result[0]))
             print("A result: " + str(result[0]))
 
             score = aggregatedFunction(result[1], seq, w1, w2, False)
@@ -243,16 +247,27 @@ def testAMPSOFuncWeight(seq, w1, w2):
             sumAligned += aligned
             sumInserted += inserted
 
+            logging.info("\tScore: " + str(score))
             print("\tScore: " + str(score))
+
             if score > bestScore:
                 bestAligned = aligned
                 bestPos = result
                 bestScore = score
                 bestInserted = inserted
                 bestBitString = result[1]
+
+            logging.info("\tBest Pos: " + str(bestPos))
+            logging.info("\tBest Score: " + str(bestScore))
             print("\tBest Pos: " + str(bestPos))
             print("\tBest Score: " + str(bestScore))
 
+    logging.info("Best Score: " + str(bestScore))
+    logging.info("Avg Score: " + str(sumScore / 30))
+    logging.info("Best Aligned: " + str(bestAligned))
+    logging.info("Avg Aligned: " + str(sumAligned / 30))
+    logging.info("Best Inserted: " + str(bestInserted))
+    logging.info("Avg Inserted:" + str(sumInserted / 30))
     print("Best Score:", bestScore)
     print("Avg Score:", sumScore / 30)
     print("Best Aligned:", bestAligned)
@@ -261,41 +276,54 @@ def testAMPSOFuncWeight(seq, w1, w2):
     print("Avg Inserted:", sumInserted / 30)
 
     for string in bitsToStrings(bestBitString, seq):
+        logging.info(string)
         print(string)
 
+    logging.info("Ended " + str(datetime.datetime.now().time()))
     print("Ended " + str(datetime.datetime.now().time()))
 
 
+logging.basicConfig(filename="ampso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
+                    level=logging.INFO,
+                    format='%(message)s')
+
+logging.info("test 1")
 print("test 1")
 testAMPSOFuncWeight(test1, 0.6, 0.4)
 testAMPSOFuncWeight(test1, 0.5, 0.5)
 testAMPSOFuncWeight(test1, 0.3, 0.7)
 
+logging.info("test 2")
 print("test 2")
 testAMPSOFuncWeight(test2, 0.6, 0.4)
 testAMPSOFuncWeight(test2, 0.5, 0.5)
 testAMPSOFuncWeight(test2, 0.3, 0.7)
 
+logging.info("test 3")
 print("test 3")
 testAMPSOFuncWeight(test3, 0.6, 0.4)
 testAMPSOFuncWeight(test3, 0.5, 0.5)
 testAMPSOFuncWeight(test3, 0.3, 0.7)
 
+logging.info("test 4")
 print("test 4")
 testAMPSOFuncWeight(test4, 0.6, 0.4)
 testAMPSOFuncWeight(test4, 0.5, 0.5)
 testAMPSOFuncWeight(test4, 0.3, 0.7)
 
+logging.info("test 5")
 print("test 5")
 testAMPSOFuncWeight(test5, 0.6, 0.4)
 testAMPSOFuncWeight(test5, 0.5, 0.5)
 testAMPSOFuncWeight(test5, 0.3, 0.7)
 
+logging.info("test 6")
 print("test 6")
 testAMPSOFuncWeight(test6, 0.6, 0.4)
 testAMPSOFuncWeight(test6, 0.5, 0.5)
 testAMPSOFuncWeight(test6, 0.3, 0.7)
 
+logging.info("test 7")
 print("test 7")
 testAMPSOFuncWeight(test7, 0.6, 0.4)
 testAMPSOFuncWeight(test7, 0.5, 0.5)

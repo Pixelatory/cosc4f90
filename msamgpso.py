@@ -91,6 +91,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
     sArchive: List[List[List[float], List[List[int], float]]] = []  # swarm archive (the pareto front)
 
     def dominates(bm1, bm2):
+        """Checking that bit matrix 1 dominates bit matrix 2."""
         better = False
         for x in range(len(f)):
             if x == 0:  # numOfAlignedChars
@@ -112,22 +113,17 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
         return better
 
     def theSame(x, y):
-        """Checks if two sets of position and bitstring values are the same.
+        """Checks if two sets of bitstring values are the same.
 
         Assumes that the position vector and bitstrings are of the same length.
 
-        :type x: Tuple[List[float], List[List[int]]]
-        :type y: Tuple[List[float], List[List[int]]]
+        :type x: List[List[int]]
+        :type y: List[List[int]]
         :rtype: bool
         """
-
-        for i in range(len(x[0])):
-            if x[0][i] != y[0][i]:
-                return False
-
-        for i in range(len(x[1])):
-            for j in range(len(x[1][i])):
-                if x[1][i][j] != y[1][i][j]:
+        for i in range(len(x)):
+            for j in range(len(x[i])):
+                if x[i][j] != y[i][j]:
                     return False
 
         return True
@@ -153,7 +149,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
             elif dominates(x[1], s[1]):
                 aDominated.append(s)
 
-            if theSame((s[0], s[1]), x):
+            if theSame(s[1], x[1]):
                 return
 
         # When the function reaches here, it's safe to say the solution dominates.
@@ -305,7 +301,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
         # if the termination criteria is met, then stop the PSO and return values
         #  numOfAlignedChars                                            numOfInsertedIndels
         if f[0](bitsToStrings(gBest[0]["bitstring"], seq)) > term[0] or f[1](gBest[1]["bitstring"], seq) < term[1]:
-            return True
+            return sArchive
 
         for i in range(len(f)):
             for j in range(n):
@@ -342,16 +338,17 @@ def testing(seqs, i):
     t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, .5, 3, float('inf'), 500,
                  [float('inf'), -float('inf')], 5000)
     for res in t:
+        print(res[0])
         for string in bitsToStrings(res[1], seqs):
             print(string)
         print(numOfAlignedChars(bitsToStrings(res[1], seqs)))
         print(numOfInsertedIndels(res[1], seqs))
 
 
-# testing(test1, 1)
-# testing(test2, 2)
-# testing(test3, 3)
-# testing(test4, 4)
+testing(test1, 1)
+testing(test2, 2)
+testing(test3, 3)
+testing(test4, 4)
 testing(test5, 5)
 testing(test6, 6)
 testing(test7, 7)

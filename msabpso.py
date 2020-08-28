@@ -7,7 +7,8 @@ import concurrent.futures
 import copy
 from typing import List
 from operator import eq
-from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, test7
+from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, \
+    test7, numOfAlignedChars, numOfInsertedIndels
 
 """
     BPSO for the MSA Problem
@@ -26,7 +27,7 @@ from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, te
 """
 
 
-def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, log):
+def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
     """The BPSO algorithm fitted for the MSA problem.
 
     :type seq: List[str]
@@ -53,8 +54,6 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     :param w1: weight coefficient for number of aligned characters
     :type w2: float
     :param w2: weight coefficient for number of leading indels used
-    :type log: bool
-    :param log: logging results of the MSABPSO
 
     :rtype: List[List[int]]
     :returns: global best position
@@ -88,23 +87,6 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     elif maxIter == float('inf') and term == float('inf'):
         raise Exception("Maximum iterations and termination fitness are both infinite!")
 
-    if log:
-        mkdir("MSABPSO logs")
-        logging.basicConfig(filename=("MSABPSO logs/msabpso" + str(datetime.datetime.now().time()) + ".log"),
-                            format='%(message)s',
-                            level=logging.INFO)
-        logging.info("n: " + str(n))
-        logging.info("w: " + str(w))
-        logging.info("c1: " + str(c1))
-        logging.info("c2: " + str(c2))
-        logging.info("vmax: " + str(vmax))
-        logging.info("vmaxiterlimit: " + str(vmaxiterlimit))
-        logging.info("term: " + str(term))
-        logging.info("maxIter: " + str(maxIter))
-        logging.info("f: " + str(f))
-        logging.info("w1: " + str(w1))
-        logging.info("w2: " + str(w2) + "\n")
-
     # Initialize the data containers
     pPositions = []
     pPersonalBests = []
@@ -123,18 +105,10 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
     numOfSeq = len(seq)  # number of sequences
     lSeq = getLongestSeqDict(seq)
 
-    if log:
-        logging.info("Number of Sequences: " + str(numOfSeq) + "\n")
-
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
     colLength = math.ceil(lSeq["len"] * 1.2)
 
     gBestPos = [[0] * colLength] * numOfSeq  # global best position
-
-    if log:
-        logging.info("Initial Global Best: " + str(gBestPos))
-        logging.info("Initial Global Best Fitness: " + str(fitness(gBestPos)))
-        logging.info("\nInitial Particle Values:")
 
     # Initializing the particles of swarm
     for i in range(n):
@@ -160,36 +134,18 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
         pPersonalBests.append(position)
         pVelocities.append(velocity)
 
-        if log:
-            logging.info("Particle " + str(i) + ":")
-            logging.info("\tPosition: " + str(position))
-            logging.info("\tPersonal Best: " + str(position))
-            logging.info("\tVelocity: " + str(velocity))
-            logging.info("\tFitness: " + str(fitness(position)))
-
         if fitness(position) > fitness(gBestPos):
             gBestPos = copy.deepcopy(position)
-
-    if log:
-        logging.info("\nGlobal best pos after particle initialization: " + str(gBestPos))
-        logging.info("Global best fitness: " + str(fitness(gBestPos)) + "\n")
 
     # This is where the iterations begin
     it = 0  # iteration count
     while it < maxIter and fitness(gBestPos) < term:
-        if log:
-            logging.info("Iteration " + str(it))
 
         # Update each particle's velocity, position, and personal best
         for i in range(n):
             # r1 and r2 are ~ U (0,1)
             r1 = random.random()
             r2 = random.random()
-
-            if log:
-                logging.info("\tParticle " + str(i))
-                logging.info("\t\tr1: " + str(r1))
-                logging.info("\t\tr2: " + str(r2))
 
             # update velocity and positions in every dimension
             for j in range(numOfSeq):
@@ -212,35 +168,14 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, lo
             if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
                 pPersonalBests[i] = copy.deepcopy(pPositions[i])
 
-            if log:
-                logging.info("\t\tPosition: " + str(pPositions[i]))
-                logging.info("\t\tPersonal Best: " + str(pPersonalBests[i]))
-                logging.info("\t\tVelocity: " + str(pVelocities[i]))
-                logging.info("\t\tFitness: " + str(fitness(pPositions[i])))
-
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):
             if fitness(pPositions[i]) > fitness(gBestPos):  # update global best if applicable
                 gBestPos = copy.deepcopy(pPositions[i])
 
-        if log:
-            logging.info("\n\tGlobal best pos: " + str(gBestPos))
-            logging.info("\tGlobal best fitness: " + str(fitness(gBestPos)))
-
         it = it + 1
 
-    if log:
-        logging.info("\n\tFinal global best pos: " + str(gBestPos))
-        logging.info("\tFinal global best fitness: " + str(fitness(gBestPos)))
-
     return gBestPos
-
-
-def mkdir(path):
-    try:
-        os.mkdir(path)
-    except FileExistsError:
-        pass
 
 
 def Sigmoid(x):
@@ -273,69 +208,113 @@ def testBPSOFuncWeight(seq, w1, w2):
     bestPos = []
     bestScore = 0
     sumScore = 0
+    sumInserted = 0
+    sumAligned = 0
+    bestInserted = 0
+    bestAligned = 0
 
+    logging.info("Started " + str(datetime.datetime.now().time()))
+    logging.info("w1: " + str(w1) + " w2: " + str(w2))
+    print("Started " + str(datetime.datetime.now().time()))
     print("w1:", w1, "w2:", w2)
 
     e = []
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(30):
-            print("Created " + str(i))
             e.append(
-                executor.submit(MSABPSO, seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2,
-                                False))
+                executor.submit(MSABPSO, seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
+
+            logging.info("A result: " + str(result))
             print("A result: " + str(result))
+
             score = aggregatedFunction(result, seq, w1, w2, False)
+            aligned = numOfAlignedChars(bitsToStrings(result, seq))
+            inserted = numOfInsertedIndels(result, seq)
+
             sumScore += score
+            sumAligned += aligned
+            sumInserted += inserted
+
+            logging.info("\tScore: " + str(score))
             print("\tScore: " + str(score))
-            print("\tSum Score: " + str(sumScore))
+
             if score > bestScore:
+                bestAligned = aligned
                 bestPos = result
                 bestScore = score
+                bestInserted = inserted
+
+            logging.info("\tBest Pos: " + str(bestPos))
+            logging.info("\tBest Score: " + str(bestScore))
             print("\tBest Pos: " + str(bestPos))
             print("\tBest Score: " + str(bestScore))
 
+    logging.info("Best Score: " + str(bestScore))
+    logging.info("Avg Score: " + str(sumScore / 30))
+    logging.info("Best Aligned: " + str(bestAligned))
+    logging.info("Avg Aligned: " + str(sumAligned / 30))
+    logging.info("Best Inserted: " + str(bestInserted))
+    logging.info("Avg Inserted:" + str(sumInserted / 30))
     print("Best Score:", bestScore)
-    print("Average Score:", sumScore / 30)
+    print("Avg Score:", sumScore / 30)
+    print("Best Aligned:", bestAligned)
+    print("Avg Aligned:", sumAligned / 30)
+    print("Best Inserted:", bestInserted)
+    print("Avg Inserted:", sumInserted / 30)
 
-    print("Final Result: ")
     for string in bitsToStrings(bestPos, seq):
+        logging.info(string)
         print(string)
 
+    logging.info("Ended " + str(datetime.datetime.now().time()))
+    print("Ended " + str(datetime.datetime.now().time()))
 
+
+logging.basicConfig(filename="bpso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
+                    level=logging.INFO,
+                    format='%(message)s')
+
+logging.info("test 1")
 print("test 1")
 testBPSOFuncWeight(test1, 0.6, 0.4)
 testBPSOFuncWeight(test1, 0.5, 0.5)
 testBPSOFuncWeight(test1, 0.3, 0.7)
 
+logging.info("test 2")
 print("test 2")
 testBPSOFuncWeight(test2, 0.6, 0.4)
 testBPSOFuncWeight(test2, 0.5, 0.5)
 testBPSOFuncWeight(test2, 0.3, 0.7)
 
+logging.info("test 3")
 print("test 3")
 testBPSOFuncWeight(test3, 0.6, 0.4)
 testBPSOFuncWeight(test3, 0.5, 0.5)
 testBPSOFuncWeight(test3, 0.3, 0.7)
 
+logging.info("test 4")
 print("test 4")
 testBPSOFuncWeight(test4, 0.6, 0.4)
 testBPSOFuncWeight(test4, 0.5, 0.5)
 testBPSOFuncWeight(test4, 0.3, 0.7)
 
+logging.info("test 5")
 print("test 5")
 testBPSOFuncWeight(test5, 0.6, 0.4)
 testBPSOFuncWeight(test5, 0.5, 0.5)
 testBPSOFuncWeight(test5, 0.3, 0.7)
 
+logging.info("test 6")
 print("test 6")
 testBPSOFuncWeight(test6, 0.6, 0.4)
 testBPSOFuncWeight(test6, 0.5, 0.5)
 testBPSOFuncWeight(test6, 0.3, 0.7)
 
+logging.info("test 7")
 print("test 7")
 testBPSOFuncWeight(test7, 0.6, 0.4)
 testBPSOFuncWeight(test7, 0.5, 0.5)
