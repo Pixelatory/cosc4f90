@@ -263,6 +263,94 @@ def gen(x, a, b, c, d):
     return math.sin(2 * math.pi * (x - a) * b * math.cos(2 * math.pi * c * (x - a))) + d
 
 
+def dominates(seq, bm1, bm2):
+    """Checking that bit matrix 1 dominates bit matrix 2.
+
+    Used in both MGPSO py code files.
+
+    :type bm1: List[List[int]]
+    :type bm2: List[List[int]]
+    :type seq: List[str]
+    """
+    better = False
+    # numOfAlignedChars
+    strings1 = bitsToStrings(bm1, seq)
+    strings2 = bitsToStrings(bm2, seq)
+    res1 = numOfAlignedChars(strings1)
+    res2 = numOfAlignedChars(strings2)
+    if res1 < res2:
+        return False
+    elif res1 > res2:
+        better = True
+
+    # numOfInsertedIndels
+    res1 = numOfInsertedIndels(bm1, seq)
+    res2 = numOfInsertedIndels(bm2, seq)
+    if res1 > res2:
+        return False
+    elif res1 < res2:
+        better = True
+
+    return better
+
+
+def updateCrowdingDistances(seq, sArchive, bmidx, distidx):
+    """Calculates the crowding distance of each archive solution.
+
+    :type seq: List[str]
+    :type bmidx: int
+    :type distidx: int
+    :type sArchive: List[List[Any]]
+    """
+    for i in range(2):
+        if i == 0:  # numOfAlignedChars
+            sArchive.sort(key=lambda x: -numOfAlignedChars(bitsToStrings(x[bmidx], seq)))
+        else:  # numOfInsertedIndels
+            sArchive.sort(key=lambda x: numOfInsertedIndels(x[bmidx], seq))
+
+        # set first and last to infinite distance
+        sArchive[0][distidx] = sArchive[len(sArchive) - 1][distidx] = float('inf')
+
+        for j in range(1, len(sArchive) - 2):
+            if sArchive[j][distidx] != float('inf'):
+                sArchive[j][distidx] += sArchive[j + 1][distidx] - sArchive[j - 1][distidx]
+
+
+def theSame(x, y):
+    """Checks if two sets of bit matrix values are the same.
+
+    Assumes that the bit matrixes are of the same length.
+
+    :type x: List[List[int]]
+    :type y: List[List[int]]
+    :rtype: bool
+    """
+    for i in range(len(x)):
+        for j in range(len(x[i])):
+            if x[i][j] != y[i][j]:
+                return False
+
+    return True
+
+
+def removeCrowdedSolution(sArchive, idx):
+    """Removes the most crowded solution in the archive.
+
+    Note: does not update crowding distance before removal
+
+    :type sArchive: List[List[Any]]
+    :type idx: int
+    :param idx: the index where crowding distance measure is stored in archive
+    """
+    minIdx = 0
+
+    for i in range(len(sArchive)):
+        if sArchive[i][idx] < sArchive[minIdx][idx]:
+            minIdx = i
+
+    del sArchive[minIdx]
+
+
 def mkdir(path):
     try:
         os.mkdir(path)

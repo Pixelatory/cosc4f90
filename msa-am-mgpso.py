@@ -1,13 +1,16 @@
+import logging
 import math
 import random
 import copy
 import concurrent.futures
-from typing import List, Tuple
+import os
+import datetime
+from typing import List, Tuple, Union
 from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsertedIndels, bitsToStrings, test1, test2, \
-    test3, test4, test5, test6, test7
+    test3, test4, test5, test6, test7, dominates, theSame, removeCrowdedSolution, updateCrowdingDistances
 
 """
-    MGPSO for the MSA Problem
+    MGPSO for the MSA Problem (using angular modulation)
     Nick Aksamit 2020
 
     Acknowledgement goes towards:
@@ -60,6 +63,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
             :param term: termination criteria for each function (set to float('inf') for no fitness termination)
             :type maxIter: int
             :param maxIter: maximum iteration limit (> 0)
+            :rtype: List[List[List[float], List[List[int]], float]]
 
         """
     # Checking for trivial errors first
@@ -88,104 +92,48 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
     pPersonalBests: List[List[List[float]]] = []  # particle personal best position
     pVelocities: List[List[List[float]]] = []  # particle velocities
     pBitStrings: List[List[List[List[int]]]] = []  # particle bit strings
-    sArchive: List[List[List[float], List[List[int], float]]] = []  # swarm archive (the pareto front)
+    sArchive: List[List[List[float], List[List[int]], float]] = []  # swarm archive (the pareto front)
 
-    def dominates(bm1, bm2):
-        """Checking that bit matrix 1 dominates bit matrix 2."""
-        better = False
-        for x in range(len(f)):
-            if x == 0:  # numOfAlignedChars
-                strings1 = bitsToStrings(bm1, seq)
-                strings2 = bitsToStrings(bm2, seq)
-                res1 = numOfAlignedChars(strings1)
-                res2 = numOfAlignedChars(strings2)
-                if res1 < res2:
-                    return False
-                elif res1 > res2:
-                    better = True
-            else:  # numOfInsertedIndels
-                res1 = numOfInsertedIndels(bm1, seq)
-                res2 = numOfInsertedIndels(bm2, seq)
-                if res1 > res2:
-                    return False
-                elif res1 < res2:
-                    better = True
-        return better
-
-    def theSame(x, y):
-        """Checks if two sets of bitstring values are the same.
-
-        Assumes that the position vector and bitstrings are of the same length.
-
-        :type x: List[List[int]]
-        :type y: List[List[int]]
-        :rtype: bool
-        """
-        for i in range(len(x)):
-            for j in range(len(x[i])):
-                if x[i][j] != y[i][j]:
-                    return False
-
-        return True
-
-    def addToArchive(x):
+    def addToArchive(sArchive, x, bmidx, distidx):
         """Adds solution x to archive a if x is not dominated by any archive solutions.
 
         After adding, if any particles in the archive are now dominated, then they are removed.
 
         Additionally, if the archive is full then the most crowded solution is removed.
 
-        :type x: Tuple[List[float], List[List[int]]]
+        :type x: Tuple[List[float], List[List[int]]] | List[List[int]]
+        :param x: Either a tuple of position vector and bit matrix, or just a bitmatrix
+        :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
+        :param sArchive: A union of either one type-set of values or the other; not mixed
+        :type bmidx: int
+        :type distidx: int
         :rtype: None
         """
-        nonlocal sArchive
         aDominated = []  # all the archive components that are dominated by x
 
         # First, check that this new solution dominates every archive solution,
         # and that the values (bitstring and position) aren't repeated
         for s in sArchive:
-            if dominates(s[1], x[1]):
-                return
-            elif dominates(x[1], s[1]):
+            if dominates(seq, s[bmidx], x[1]):
+                return sArchive
+            elif dominates(seq, x[1], s[1]):
                 aDominated.append(s)
 
             if theSame(s[1], x[1]):
-                return
+                return sArchive
 
         # When the function reaches here, it's safe to say the solution dominates.
         # So, let's add it to archive.
         sArchive.append(copy.deepcopy([x[0], x[1], 0.0]))
 
         # Next, after adding it remove all the archive elements that x dominates
-        sArchive = [x for x in sArchive if x not in aDominated]
+        newSArchive = [x for x in sArchive if x not in aDominated]
 
         if len(sArchive) > len(f) * n:
-            removeCrowdedSolution()
+            updateCrowdingDistances(seq, newSArchive, bmidx, distidx)
+            removeCrowdedSolution(newSArchive, 2)
 
-    def updateCrowdingDistances():
-        """Calculates the crowding distance of each archive solution."""
-        for i in range(len(f)):
-            if i == 0:  # numOfAlignedChars
-                sArchive.sort(key=lambda x: -numOfAlignedChars(bitsToStrings(x[1], seq)))
-            else:  # numOfInsertedIndels
-                sArchive.sort(key=lambda x: numOfInsertedIndels(x[1], seq))
-
-            sArchive[0][2] = sArchive[len(sArchive) - 1][2] = float('inf')  # set first and last to infinite distance
-
-            for j in range(1, len(sArchive) - 2):
-                if sArchive[j][2] != float('inf'):
-                    sArchive[j][2] += sArchive[j + 1][2] - sArchive[j - 1][2]
-
-    def removeCrowdedSolution():
-        """Removes the most crowded solution in the archive."""
-        updateCrowdingDistances()
-        minIdx = 0
-
-        for i in range(len(sArchive)):
-            if sArchive[i][2] < sArchive[minIdx][2]:
-                minIdx = i
-
-        del sArchive[minIdx]
+        return newSArchive
 
     def archiveGuide():
         """Uses tournament selection where k is the number of particles to choose.
@@ -335,15 +283,24 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
 
 def testing(seqs, i):
     print("\nTest " + str(i))
+    logging.info("\nTest " + str(i))
     t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, .5, 3, float('inf'), 500,
                  [float('inf'), -float('inf')], 5000)
     for res in t:
+        logging.info(res[0])
         print(res[0])
         for string in bitsToStrings(res[1], seqs):
+            logging.info(string)
             print(string)
+        logging.info(numOfAlignedChars(bitsToStrings(res[1], seqs)))
         print(numOfAlignedChars(bitsToStrings(res[1], seqs)))
+        logging.info(numOfInsertedIndels(res[1], seqs))
         print(numOfInsertedIndels(res[1], seqs))
 
+
+logging.basicConfig(filename="mpampso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
+                    level=logging.INFO,
+                    format='%(message)s')
 
 testing(test1, 1)
 testing(test2, 2)
@@ -352,3 +309,5 @@ testing(test4, 4)
 testing(test5, 5)
 testing(test6, 6)
 testing(test7, 7)
+
+os.system('shutdown -s')
