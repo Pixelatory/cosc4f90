@@ -1,3 +1,4 @@
+import copy
 import random
 import math
 import os
@@ -294,13 +295,38 @@ def dominates(seq, bm1, bm2):
     return better
 
 
+def archiveGuide(seq, sArchive, bmidx, distidx, k):
+    """Uses tournament selection where k is the number of particles to choose.
+
+    Out of the k possible particles randomly selected, the least crowded particle wins the tournament.
+
+    :type seq: List[str]
+    :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
+    :type bmidx: int
+    :type distidx: int
+    :type k: int
+    :rtype: List[float]
+    :returns: Position vector
+    """
+    updateCrowdingDistances(seq, sArchive, bmidx, distidx)
+
+    idx = random.randint(0, len(sArchive) - 1)
+
+    for i in range(k - 1):
+        tmp = random.randint(0, len(sArchive) - 1)
+        if sArchive[tmp][2] > sArchive[idx][2]:
+            idx = tmp
+
+    return sArchive[idx][0]
+
+
 def updateCrowdingDistances(seq, sArchive, bmidx, distidx):
     """Calculates the crowding distance of each archive solution.
 
     :type seq: List[str]
     :type bmidx: int
     :type distidx: int
-    :type sArchive: List[List[Any]]
+    :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
     """
     for i in range(2):
         if i == 0:  # numOfAlignedChars
@@ -331,6 +357,61 @@ def theSame(x, y):
                 return False
 
     return True
+
+
+def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
+    """Adds solution x to archive a if x is not dominated by any archive solutions.
+
+    After adding, if any particles in the archive are now dominated, then they are removed.
+
+    Additionally, if the archive is full then the most crowded solution is removed.
+
+    :type seq: List[str]
+    :type x: Tuple[List[float], List[List[int]]] | List[List[int]]
+    :param x: Either a tuple of position vector and bit matrix, or just a bitmatrix
+    :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
+    :param sArchive: A union of either one type-set of values or the other; not mixed
+    :type bmidx: int
+    :type distidx: int
+    :type archiveLimit: int
+    :param archiveLimit: Max number of particles allowed in the archive
+    :rtype: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
+    """
+    if len(x) == 1:  # means it's List[List[int]]
+        bm = x
+    elif len(x) == 2:  # means it's Tuple[List[float], List[List[int]]]
+        bm = x[1]
+    else:
+        raise Exception("Invalid parameter x, must be ([float], [[int]]) or [[int]]")
+
+    aDominated = []  # all the archive components that are dominated by x
+
+    # First, check that this new solution dominates every archive solution,
+    # and that the values (bitstring and position) aren't repeated
+    for s in sArchive:
+        if dominates(seq, s[bmidx], bm):
+            return sArchive
+        elif dominates(seq, bm, s[bmidx]):
+            aDominated.append(s)
+
+        if theSame(s[bmidx], bm):
+            return sArchive
+
+    # When the function reaches here, it's safe to say the solution dominates.
+    # So, let's add it to archive.
+    if len(x) == 1:  # means it's List[List[int]]
+        sArchive.append(copy.deepcopy([bm, 0.0]))
+    else:  # means it's Tuple[List[float], List[List[int]]]
+        sArchive.append(copy.deepcopy([x[0], x[1], 0.0]))
+
+    # Next, after adding it remove all the archive elements that x dominates
+    newArchive = [x for x in sArchive if x not in aDominated]
+
+    if len(sArchive) > archiveLimit:
+        updateCrowdingDistances(seq, newArchive, bmidx, distidx)
+        removeCrowdedSolution(newArchive, 2)
+
+    return newArchive
 
 
 def removeCrowdedSolution(sArchive, idx):

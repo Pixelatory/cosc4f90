@@ -7,7 +7,8 @@ import os
 import datetime
 from typing import List, Tuple, Union
 from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsertedIndels, bitsToStrings, test1, test2, \
-    test3, test4, test5, test6, test7, dominates, theSame, removeCrowdedSolution, updateCrowdingDistances
+    test3, test4, test5, test6, test7, dominates, theSame, removeCrowdedSolution, updateCrowdingDistances, archiveGuide, \
+    addToArchive
 
 """
     MGPSO for the MSA Problem (using angular modulation)
@@ -94,66 +95,6 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
     pBitStrings: List[List[List[List[int]]]] = []  # particle bit strings
     sArchive: List[List[List[float], List[List[int]], float]] = []  # swarm archive (the pareto front)
 
-    def addToArchive(sArchive, x, bmidx, distidx):
-        """Adds solution x to archive a if x is not dominated by any archive solutions.
-
-        After adding, if any particles in the archive are now dominated, then they are removed.
-
-        Additionally, if the archive is full then the most crowded solution is removed.
-
-        :type x: Tuple[List[float], List[List[int]]] | List[List[int]]
-        :param x: Either a tuple of position vector and bit matrix, or just a bitmatrix
-        :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
-        :param sArchive: A union of either one type-set of values or the other; not mixed
-        :type bmidx: int
-        :type distidx: int
-        :rtype: None
-        """
-        aDominated = []  # all the archive components that are dominated by x
-
-        # First, check that this new solution dominates every archive solution,
-        # and that the values (bitstring and position) aren't repeated
-        for s in sArchive:
-            if dominates(seq, s[bmidx], x[1]):
-                return sArchive
-            elif dominates(seq, x[1], s[1]):
-                aDominated.append(s)
-
-            if theSame(s[1], x[1]):
-                return sArchive
-
-        # When the function reaches here, it's safe to say the solution dominates.
-        # So, let's add it to archive.
-        sArchive.append(copy.deepcopy([x[0], x[1], 0.0]))
-
-        # Next, after adding it remove all the archive elements that x dominates
-        newSArchive = [x for x in sArchive if x not in aDominated]
-
-        if len(sArchive) > len(f) * n:
-            updateCrowdingDistances(seq, newSArchive, bmidx, distidx)
-            removeCrowdedSolution(newSArchive, 2)
-
-        return newSArchive
-
-    def archiveGuide():
-        """Uses tournament selection where k is the number of particles to choose.
-
-        Out of the k possible particles randomly selected, the least crowded particle wins the tournament.
-
-        :rtype: List[float]
-        :returns: Position vector
-        """
-        updateCrowdingDistances()
-
-        idx = random.randint(0, len(sArchive) - 1)
-
-        for i in range(k - 1):
-            tmp = random.randint(0, len(sArchive) - 1)
-            if sArchive[tmp][2] > sArchive[idx][2]:
-                idx = tmp
-
-        return sArchive[idx][0]
-
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
@@ -203,13 +144,13 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
                     gBest[i]["bitstring"] = copy.deepcopy(bitstring)
 
     def multiThreaded(i, j):
-        nonlocal pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, genInterval, f
+        nonlocal pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, genInterval, f, k
         # Within each subswarm, update each particle's velocity, position, and personal best
         # r1 and r2 are ~ U (0,1)
         r1 = random.random()
         r2 = random.random()
         r3 = random.random()
-        a = archiveGuide()
+        a = archiveGuide(seq, sArchive, 1, 2, k)
 
         # update velocity and positions in every dimension
         for k in range(4):
