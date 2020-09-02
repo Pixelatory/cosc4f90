@@ -409,7 +409,7 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
 
     if len(sArchive) > archiveLimit:
         updateCrowdingDistances(seq, newArchive, bmidx, distidx)
-        removeCrowdedSolution(newArchive, 2)
+        removeCrowdedSolution(newArchive, distidx)
 
     return newArchive
 

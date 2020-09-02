@@ -111,8 +111,8 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
 
     # Initializing the particles of swarm
     for i in range(n):
-        position = []
-        velocity = []
+        position: List[List[int]] = []
+        velocity: List[List[float]] = [[float(0)] * colLength] * len(seq)
 
         # This initiates the position and velocity, which are
         # both a matrix of size [numOfSequences x colLength].
@@ -121,7 +121,6 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
         # position is feasible.
         for j in range(numOfSeq):
             position.append([0] * colLength)
-            velocity.append([float(0)] * colLength)
             for x in range(colLength - len(seq[j])):
                 while True:
                     randNum = random.randint(0, colLength - 1)

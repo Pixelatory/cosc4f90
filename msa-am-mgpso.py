@@ -144,7 +144,8 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
                     gBest[i]["bitstring"] = copy.deepcopy(bitstring)
 
     def multiThreaded(i, j):
-        nonlocal pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, genInterval, f, k
+        nonlocal pPositions, pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, \
+            genInterval, f, k
         # Within each subswarm, update each particle's velocity, position, and personal best
         # r1 and r2 are ~ U (0,1)
         r1 = random.random()
@@ -166,7 +167,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
                 elif pVelocities[i][j][k] < -vmax:
                     pVelocities[i][j][k] = -vmax
 
-            pPositions[i][j][k] = pPositions[i][j][k] + pVelocities[i][j][k]
+            pPositions[i][j][k] += pVelocities[i][j][k]
 
         bitstring = genBitMatrix(pPositions[i][j], seq, colLength, genInterval)
 
@@ -194,13 +195,12 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
 
         for i in range(len(f)):
             for j in range(n):
-                addToArchive((pPositions[i][j], pBitStrings[i][j]))
+                sArchive = addToArchive(seq, sArchive, (pPositions[i][j], pBitStrings[i][j]), 1, 2, len(f) * n)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for i in range(len(f)):
                 for j in range(n):
                     executor.submit(multiThreaded, i, j)
-            # mapped = {executor.submit(multiThreaded, )}
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(len(f)):
