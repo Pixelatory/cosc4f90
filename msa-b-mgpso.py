@@ -1,10 +1,13 @@
 import concurrent.futures
 import copy
+import datetime
+import logging
 import math
+import os
 import random
 from typing import List
 from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, genBitMatrix, bitsToStrings, archiveGuide, \
-    addToArchive
+    addToArchive, test1, test2, test3, test4, test5, test6, test7
 
 """
     MGPSO for the MSA Problem (using binary representation)
@@ -14,7 +17,7 @@ from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, genB
 """
 
 
-def MSAMGPSO(seq, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
+def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
     # Checking for trivial errors first
     if n < 1:
         raise Exception("Swarm size cannot be < 1")
@@ -30,7 +33,7 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
     pPositions: List[List[List[List[int]]]] = []  # particle positions
     pPersonalBests: List[List[List[List[int]]]] = []  # particle personal best position
     pVelocities: List[List[List[List[float]]]] = []  # particle velocities
-    sArchive: List[List[List[List[int], float]]] = []  # swarm archive (the pareto front)
+    sArchive: List[List[List[List[int]], float]] = []  # swarm archive (the pareto front)
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -40,6 +43,9 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
     # Initializing gBest
     # Each subswarm has its own gBest position
     gBest = []
+
+    # Initializing the lambda parameter
+    l = 0
 
     for i in range(len(f)):
         gBest.append([[0] * colLength] * len(seq))
@@ -80,6 +86,10 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
             else:  # numOfInsertedIndels
                 if f[i](position, seq) < f[i](gBest[i], seq):
                     gBest[i] = copy.deepcopy(position)
+
+        pPositions.append(newSwarmPositions)
+        pPersonalBests.append(newSwarmPersonalBests)
+        pVelocities.append(newSwarmVelocities)
 
     def multiThreaded(i, j):
         nonlocal pPositions, pVelocities, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, f, k
@@ -144,6 +154,64 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
                     if f[i](pPositions[i][j], seq) < f[i](gBest[i], seq):
                         gBest[i] = copy.deepcopy(pPositions[i][j])
 
+        # update the lambda parameter (linearly increasing)
+        l += 1/maxIter
+
         it = it + 1
 
     return sArchive
+
+
+def testing(seqs, i, iterations):
+    print("\nTest " + str(i))
+    logging.info("\nTest " + str(i))
+    logging.info(seqs)
+    logging.info("n = 30")
+    logging.info("w = 0.729844")
+    logging.info("c1 = c2 = c3 = 1.49618")
+    logging.info("k = 3")
+    logging.info("vmax = infinite")
+    logging.info("term = maxIter")
+    logging.info("maxIter = " + str(iterations))
+
+    print(str(iterations) + " iterations:")
+    t = MSAMGPSO(seqs, 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), 500,
+                 [float('inf'), -float('inf')], iterations)
+    for res in t:
+        logging.info(res[0])
+        print(res[0])
+        for string in bitsToStrings(res[0], seqs):
+            logging.info(string)
+            print(string)
+        logging.info(numOfAlignedChars(bitsToStrings(res[0], seqs)))
+        print(numOfAlignedChars(bitsToStrings(res[0], seqs)))
+        logging.info(numOfInsertedIndels(res[0], seqs))
+        print(numOfInsertedIndels(res[0], seqs))
+
+
+logging.basicConfig(filename="mgbpso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
+                    level=logging.INFO,
+                    format='%(message)s')
+
+AB000177 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgcaacagcaccagcaggtgatacaccaaatcagatgcctcattcttcagctcaaagcggtcatttaccgttgcggccagtgcggttt"
+AB000178 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgttggtgccagtgcggttt"
+AB000179 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgtcgcggccagtgcagttt"
+AB000180 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccttgatcctgcaacaacaccagcaggtgatacatcaaatcagatgcctcgttggtcagttcaaagcggtcatgtactgtcgctgccagtgcggttt"
+
+strs = [AB000177, AB000178, AB000179, AB000180]
+
+testing(strs, 1, 1000)
+testing(strs, 2, 2500)
+testing(strs, 3, 5000)
+testing(strs, 3, 7500)
+testing(strs, 4, 10000)
+'''
+testing(test2, 2)
+testing(test3, 3)
+testing(test4, 4)
+testing(test5, 5)
+testing(test6, 6)
+testing(test7, 7)'''
+
+
+#os.system('%windir%\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,0') # sleep mode

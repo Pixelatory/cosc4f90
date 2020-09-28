@@ -18,7 +18,7 @@ from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsert
 """
 
 
-def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term, maxIter):
+def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
     """The MGPSO algorithm fitted for the MSA problem using angular modulation (AM).
 
         Initialization Process:
@@ -104,6 +104,9 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
     # Each subswarm has its own gBest pos and bitmatrix
     gBest = []
 
+    # Initializing the lambda parameter
+    l: float = 0
+
     for i in range(len(f)):
         gBest.append({})
         gBest[i]["pos"] = [0, 0, 0, 0]
@@ -145,7 +148,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
 
     def multiThreaded(i, j):
         nonlocal pPositions, pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, \
-            genInterval, f, k
+            genInterval, f, k, l
         # Within each subswarm, update each particle's velocity, position, and personal best
         # r1 and r2 are ~ U (0,1)
         r1 = random.random()
@@ -217,16 +220,30 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, l, k, vmax, vmaxiterlimit, term
                         gBest[i]["pos"] = copy.deepcopy(pPositions[i][j])
                         gBest[i]["bitstring"] = copy.deepcopy(pBitStrings[i][j])
 
+        # update the lambda parameter (linearly increasing)
+        l += 1 / maxIter
+
         it = it + 1
 
     return sArchive
 
 
-def testing(seqs, i):
+def testing(seqs, i, iterations):
     print("\nTest " + str(i))
     logging.info("\nTest " + str(i))
-    t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, .5, 3, float('inf'), 500,
-                 [float('inf'), -float('inf')], 5000)
+    logging.info(seqs)
+    logging.info("genInterval = [-2.0, 2.0]")
+    logging.info("n = 30")
+    logging.info("w = 0.729844")
+    logging.info("c1 = c2 = c3 = 1.49618")
+    logging.info("k = 3")
+    logging.info("vmax = infinite")
+    logging.info("term = maxIter")
+    logging.info("maxIter = " + str(iterations))
+
+    print(str(iterations) + " iterations:")
+    t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), 500,
+                 [float('inf'), -float('inf')], iterations)
     for res in t:
         logging.info(res[0])
         print(res[0])
@@ -243,6 +260,20 @@ logging.basicConfig(filename="mpampso " + str(datetime.datetime.now().strftime("
                     level=logging.INFO,
                     format='%(message)s')
 
+AB000177 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgcaacagcaccagcaggtgatacaccaaatcagatgcctcattcttcagctcaaagcggtcatttaccgttgcggccagtgcggttt"
+AB000178 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgttggtgccagtgcggttt"
+AB000179 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgtcgcggccagtgcagttt"
+AB000180 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccttgatcctgcaacaacaccagcaggtgatacatcaaatcagatgcctcgttggtcagttcaaagcggtcatgtactgtcgctgccagtgcggttt"
+
+strs = [AB000177, AB000178, AB000179, AB000180]
+
+testing(strs, 1, 1000)
+testing(strs, 2, 2500)
+testing(strs, 3, 5000)
+testing(strs, 3, 7500)
+testing(strs, 4, 10000)
+
+'''
 testing(test1, 1)
 testing(test2, 2)
 testing(test3, 3)
@@ -251,4 +282,4 @@ testing(test5, 5)
 testing(test6, 6)
 testing(test7, 7)
 
-os.system('shutdown -s')
+#os.system('shutdown -s') # shutdown computer'''

@@ -377,9 +377,9 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
     :param archiveLimit: Max number of particles allowed in the archive
     :rtype: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
     """
-    if len(x) == 1:  # means it's List[List[int]]
+    if type(x) is list and len(seq) == len(x):  # means it's List[List[int]]
         bm = x
-    elif len(x) == 2:  # means it's Tuple[List[float], List[List[int]]]
+    elif type(x) is tuple and len(x) == 2:  # means it's Tuple[List[float], List[List[int]]]
         bm = x[1]
     else:
         raise Exception("Invalid parameter x, must be ([float], [[int]]) or [[int]]")
@@ -399,7 +399,7 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
 
     # When the function reaches here, it's safe to say the solution dominates.
     # So, let's add it to archive.
-    if len(x) == 1:  # means it's List[List[int]]
+    if type(x) is list and len(seq) == len(x):  # means it's List[List[int]]
         sArchive.append(copy.deepcopy([bm, 0.0]))
     else:  # means it's Tuple[List[float], List[List[int]]]
         sArchive.append(copy.deepcopy([x[0], x[1], 0.0]))
