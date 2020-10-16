@@ -245,6 +245,8 @@ def testing(seqs, i, iterations):
     t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), 500,
                  [float('inf'), -float('inf')], iterations)
     for res in t:
+        logging.info(res[1])
+        print(res[1])
         logging.info(res[0])
         print(res[0])
         for string in bitsToStrings(res[1], seqs):

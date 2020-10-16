@@ -5,7 +5,7 @@ import logging
 import concurrent.futures
 import copy
 from typing import List
-from operator import eq
+from operator import lt
 from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, \
     test7, numOfAlignedChars, numOfInsertedIndels
 
@@ -87,9 +87,10 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
         raise Exception("Maximum iterations and termination fitness are both infinite!")
 
     # Initialize the data containers
-    pPositions = []
-    pPersonalBests = []
-    pVelocities = []
+    pPositions: List[List[List[int]]] = []
+    pPersonalBests: List[List[List[int]]] = []
+    pVelocities: List[List[List[float]]] = []
+    numOfInfeasibleSols: int = 0
 
     def fitness(pos):
         """
@@ -98,7 +99,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
         :rtype: float
         :returns: Fitness value of position vector
         """
-        return f(pos, seq, w1, w2, True, eq)
+        return f(pos, seq, w1, w2, True, lt)
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -165,6 +166,8 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
             # update personal best if applicable
             if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
                 pPersonalBests[i] = copy.deepcopy(pPositions[i])
+
+            
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):

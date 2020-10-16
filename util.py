@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple
 """
 
 
-def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability=False, op=None):
+def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasibility=False, op=None):
     """A maximization aggregated fitness function that follows the following formula:
 
     f(x) = w1 * numOfAlignedChars(x) + w2 * (nMax - nI),\n
@@ -30,18 +30,18 @@ def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasability=False, op=None
     :type w1: float
     :param w2: weight coefficient for number of leading indels used
     :type w2: float
-    :param checkInfeasability: whether or not a position can be infeasable
-    :type checkInfeasability: bool
-    :param op: comparison of (count of 0 bits in row, length of sequence)
+    :param checkInfeasibility: whether or not a position can be infeasable
+    :type checkInfeasibility: bool
+    :param op: how to compare between count of 0 bits in row, and the length of the sequence
     :type op: (int, int) -> bool
     :rtype: float
     :return: fitness value
     """
 
-    if checkInfeasability and op is None:
-        raise Exception("Cannot check infeasability with a None operator")
+    if checkInfeasibility and op is None:
+        raise Exception("Cannot check infeasibility with a None operator")
 
-    if checkInfeasability and infeasible(bitmatrix, seq, op):
+    if checkInfeasibility and infeasible(bitmatrix, seq, op):
         return -float('inf')
 
     strings = bitsToStrings(bitmatrix, seq)
@@ -121,6 +121,8 @@ def infeasible(bitmatrix, seq, op):
     The operator can be anything within the parameter format, however
     usually it is >, <, =. For easy access to these use the operator
     module.
+
+    Ex. When using >, result is True when [0's count] > [length of string]
 
     :type op: (int, int) -> bool
     :param op: comparison of (count of 0 bits in row, length of sequence)
