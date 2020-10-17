@@ -1,14 +1,18 @@
 import logging
 import math
 import random
-import copy
 import concurrent.futures
 import os
 import datetime
+
+from operator import lt, gt
+from copy import deepcopy
+from statistics import stdev
+from threading import Lock
 from typing import List, Tuple, Union
 from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsertedIndels, bitsToStrings, test1, test2, \
     test3, test4, test5, test6, test7, dominates, theSame, removeCrowdedSolution, updateCrowdingDistances, archiveGuide, \
-    addToArchive
+    addToArchive, infeasible
 
 """
     MGPSO for the MSA Problem (using angular modulation)
@@ -64,7 +68,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
             :param term: termination criteria for each function (set to float('inf') for no fitness termination)
             :type maxIter: int
             :param maxIter: maximum iteration limit (> 0)
-            :rtype: List[List[List[float], List[List[int]], float]]
+            :rtype: (List[List[List[float], List[List[int]], float]], int)
 
         """
     # Checking for trivial errors first
@@ -93,7 +97,9 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
     pPersonalBests: List[List[List[float]]] = []  # particle personal best position
     pVelocities: List[List[List[float]]] = []  # particle velocities
     pBitStrings: List[List[List[List[int]]]] = []  # particle bit strings
-    sArchive: List[List[List[float], List[List[int]], float]] = []  # swarm archive (the pareto front)
+    sArchive: List[List[List[float], List[List[int]], float]] = []  # swarm archive
+    numOfInfeasibleSols: int = 0
+    lock = Lock()
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -104,13 +110,13 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
     # Each subswarm has its own gBest pos and bitmatrix
     gBest = []
 
-    # Initializing the lambda parameter
-    l: float = 0
-
     for i in range(len(f)):
         gBest.append({})
         gBest[i]["pos"] = [0, 0, 0, 0]
         gBest[i]["bitstring"] = genBitMatrix(gBest[i]["pos"], seq, colLength, genInterval)
+
+    # Initializing the lambda parameter
+    l: float = 0
 
     # Initializing the particles of each subswarm
     for i in range(len(f)):
@@ -135,20 +141,23 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
             pVelocities[i].append(velocity)
             pBitStrings[i].append(bitstring)
 
+            if infeasible(bitstring, seq, [lt, gt]):
+                numOfInfeasibleSols += 1
+
             if i == 0:  # numOfAlignedChars
                 strings = bitsToStrings(bitstring, seq)
                 gBestStrings = bitsToStrings(gBest[i]["bitstring"], seq)
                 if f[i](strings) > f[i](gBestStrings):
-                    gBest[i]["pos"] = copy.deepcopy(position)
-                    gBest[i]["bitstring"] = copy.deepcopy(bitstring)
+                    gBest[i]["pos"] = deepcopy(position)
+                    gBest[i]["bitstring"] = deepcopy(bitstring)
             else:  # numOfInsertedIndels
                 if f[i](bitstring, seq) < f[i](gBest[i]["bitstring"], seq):
-                    gBest[i]["pos"] = copy.deepcopy(position)
-                    gBest[i]["bitstring"] = copy.deepcopy(bitstring)
+                    gBest[i]["pos"] = deepcopy(position)
+                    gBest[i]["bitstring"] = deepcopy(bitstring)
 
     def multiThreaded(i, j):
         nonlocal pPositions, pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, \
-            genInterval, f, k, l
+            genInterval, f, k, l, numOfInfeasibleSols
         # Within each subswarm, update each particle's velocity, position, and personal best
         # r1 and r2 are ~ U (0,1)
         r1 = random.random()
@@ -174,17 +183,23 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
 
         bitstring = genBitMatrix(pPositions[i][j], seq, colLength, genInterval)
 
+        lock.acquire(True)
+        # Checking for infeasibility
+        if infeasible(bitstring, seq, [lt, gt]):
+            numOfInfeasibleSols += 1
+        lock.release()
+
         # update personal best if applicable
         if i == 0:  # numOfAlignedChars
             strings = bitsToStrings(bitstring, seq)
             pBestStrings = bitsToStrings(pBitStrings[i][j], seq)
             if f[i](strings) > f[i](pBestStrings):
-                pPersonalBests[i][j] = copy.deepcopy(pPositions[i][j])
-                pBitStrings[i][j] = copy.deepcopy(bitstring)
+                pPersonalBests[i][j] = deepcopy(pPositions[i][j])
+                pBitStrings[i][j] = deepcopy(bitstring)
         else:  # numOfInsertedIndels
             if f[i](bitstring, seq) < f[i](pBitStrings[i][j], seq):
-                pPersonalBests[i][j] = copy.deepcopy(pPositions[i][j])
-                pBitStrings[i][j] = copy.deepcopy(bitstring)
+                pPersonalBests[i][j] = deepcopy(pPositions[i][j])
+                pBitStrings[i][j] = deepcopy(bitstring)
 
     # This is where the iterations begin
     it = 0  # iteration count
@@ -213,19 +228,19 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
                     strings = bitsToStrings(pBitStrings[i][j], seq)
                     gBestStrings = bitsToStrings(gBest[i]["bitstring"], seq)
                     if f[i](strings) > f[i](gBestStrings):
-                        gBest[i]["pos"] = copy.deepcopy(pPositions[i][j])
-                        gBest[i]["bitstring"] = copy.deepcopy(pBitStrings[i][j])
+                        gBest[i]["pos"] = deepcopy(pPositions[i][j])
+                        gBest[i]["bitstring"] = deepcopy(pBitStrings[i][j])
                 else:  # numOfInsertedIndels
                     if f[i](pBitStrings[i][j], seq) < f[i](gBest[i]["bitstring"], seq):
-                        gBest[i]["pos"] = copy.deepcopy(pPositions[i][j])
-                        gBest[i]["bitstring"] = copy.deepcopy(pBitStrings[i][j])
+                        gBest[i]["pos"] = deepcopy(pPositions[i][j])
+                        gBest[i]["bitstring"] = deepcopy(pBitStrings[i][j])
 
         # update the lambda parameter (linearly increasing)
         l += 1 / maxIter
 
         it = it + 1
 
-    return sArchive
+    return sArchive, numOfInfeasibleSols
 
 
 def testing(seqs, i, iterations):
@@ -244,7 +259,13 @@ def testing(seqs, i, iterations):
     print(str(iterations) + " iterations:")
     t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), 500,
                  [float('inf'), -float('inf')], iterations)
-    for res in t:
+
+    aligns = []
+    inserts = []
+    archive = t[0]
+    numOfInfeasibleSols = t[1]
+
+    for res in archive:
         logging.info(res[1])
         print(res[1])
         logging.info(res[0])
@@ -256,6 +277,8 @@ def testing(seqs, i, iterations):
         print(numOfAlignedChars(bitsToStrings(res[1], seqs)))
         logging.info(numOfInsertedIndels(res[1], seqs))
         print(numOfInsertedIndels(res[1], seqs))
+
+    print("Infeasible Sols: " + str((numOfInfeasibleSols / (30 * 2 * iterations)) * 100) + "%")
 
 
 logging.basicConfig(filename="mpampso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
