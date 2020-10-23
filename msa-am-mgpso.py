@@ -9,10 +9,9 @@ from operator import lt, gt
 from copy import deepcopy
 from statistics import stdev
 from threading import Lock
-from typing import List, Tuple, Union
+from typing import List
 from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsertedIndels, bitsToStrings, test1, test2, \
-    test3, test4, test5, test6, test7, dominates, theSame, removeCrowdedSolution, updateCrowdingDistances, archiveGuide, \
-    addToArchive, infeasible
+    test3, test4, test5, test6, test7, archiveGuide, addToArchive, infeasible
 
 """
     MGPSO for the MSA Problem (using angular modulation)
@@ -22,7 +21,7 @@ from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsert
 """
 
 
-def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
+def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
     """The MGPSO algorithm fitted for the MSA problem using angular modulation (AM).
 
         Initialization Process:
@@ -33,25 +32,21 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
             Particle velocities: each vi = 0
 
         MGPSO (AM version):
-            Topology: Star (gBest)
-
-            PSO Type: Synchronous
-
-            Velocity Update: v(t+1) = w * vi + r1 * c1 * (yi - xi) + l * r2 * c2 * (ŷi - xi) + (1 - l) * r3 * c3 * (
-            TODO,
-            where r1, r2, r3 are uniformly random values between [0,1]
-
-            Velocity clamping done until vmaxiterlimit is reached
-
-            Position Update: x(t+1) = x(t) + v(t+1)
-
-            Angular modulation function will be within interval [genInterval[0], genInterval[1]]
+            - Topology: Star (gBest)
+            - PSO Type: Synchronous
+            - Velocity Update: v(t+1) = w * v(t) + \
+            r1 * c1 * (y(t) - x(t)) + l * r2 * c2 * (ŷ(t) - x(t)) + (1 - l) * r3 * c3 * (â(t) - x(t)), (where r1, r2, \
+            r3 are uniformly random values between [0,1]\n
+            - Lambda parameter: linearly increasing
+            - Velocity clamping done until vmaxiterlimit is reached
+            - Position Update: x(t+1) = x(t) + v(t+1)
+            - Angular modulated generation function will be within interval [genInterval[0], genInterval[1]]
 
 
             :type seq: List[str]
             :param seq: sequences to be aligned
             :type genInterval: List[float]
-            :param genInterval: the interval that is used within the angular modulation generation function
+            :param genInterval: the interval that is used within the angular modulated generation function
             :type n: int
             :param n: swarm size (> 0)
             :type w: float
@@ -60,14 +55,21 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
             :param c1: cognitive coefficient
             :type c2: float
             :param c2: social coefficient
+            :type c3: float
+            :param c3: archive coefficient
+            :type k: int
+            :param k: tournament selection value
             :type vmax: float
             :param vmax: maximum velocity value (clamping) (set to float('inf') for no clamping)
             :type vmaxiterlimit: int
-            :param vmaxiterlimit: Maximum iteration limit of clamping velocity values
+            :param vmaxiterlimit: Maximum iteration limit of clamping velocity values (float('inf') for no iter limit)
             :type term: List[float]
             :param term: termination criteria for each function (set to float('inf') for no fitness termination)
             :type maxIter: int
             :param maxIter: maximum iteration limit (> 0)
+            :type ops: List[(float, float) -> bool]
+            :param ops: operators that will check for infeasibility (See util.py -> infeasible)
+            :returns: (sArchive, numOfInfeasibleSols)
             :rtype: (List[List[List[float], List[List[int]], float]], int)
 
         """
@@ -141,7 +143,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
             pVelocities[i].append(velocity)
             pBitStrings[i].append(bitstring)
 
-            if infeasible(bitstring, seq, [lt, gt]):
+            if infeasible(bitstring, seq, ops):
                 numOfInfeasibleSols += 1
 
             if i == 0:  # numOfAlignedChars
@@ -169,8 +171,11 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
         for k in range(4):
             pVelocities[i][j][k] = w * pVelocities[i][j][k] + \
                                    r1 * c1 * (pPersonalBests[i][j][k] - pPositions[i][j][k]) + \
-                                   l * r2 * c2 * (gBest[i]["pos"][k] - pPositions[i][j][k]) + \
-                                   (1 - l) * r3 * c3 * (a[k] - pPositions[i][j][k])
+                                   l * r2 * c2 * (gBest[i]["pos"][k] - pPositions[i][j][k])
+
+            # If a is not None, then apply the archive component in, otherwise don't cause it's empty
+            if a is not None:
+                pVelocities[i][j][k] += (1 - l) * r3 * c3 * (a[k] - pPositions[i][j][k])
 
             # velocity clamping
             if vmaxiterlimit < it:
@@ -183,11 +188,12 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
 
         bitstring = genBitMatrix(pPositions[i][j], seq, colLength, genInterval)
 
-        lock.acquire(True)
         # Checking for infeasibility
         if infeasible(bitstring, seq, [lt, gt]):
+            lock.acquire(True)  # reducing concurrency-related errors for infeasible particle count
             numOfInfeasibleSols += 1
-        lock.release()
+            lock.release()
+            return  # bitstring is infeasible, so do not update its personal best
 
         # update personal best if applicable
         if i == 0:  # numOfAlignedChars
@@ -204,18 +210,18 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
     # This is where the iterations begin
     it = 0  # iteration count
     while it < maxIter:
-        # print(str(it) + " " + str(it / maxIter) + "%")
-
         # if the termination criteria is met, then stop the PSO and return values
         #  numOfAlignedChars                                            numOfInsertedIndels
         if f[0](bitsToStrings(gBest[0]["bitstring"], seq)) > term[0] or f[1](gBest[1]["bitstring"], seq) < term[1]:
             return sArchive
 
+        # Attempt addition of all particles into archive
         for i in range(len(f)):
             for j in range(n):
-                sArchive = addToArchive(seq, sArchive, (pPositions[i][j], pBitStrings[i][j]), 1, 2, len(f) * n)
+                sArchive = addToArchive(seq, sArchive, (pPositions[i][j], pBitStrings[i][j]), 1, 2, len(f) * n, ops)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Perform velocity/position/personal best updates for all particles
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
             for i in range(len(f)):
                 for j in range(n):
                     executor.submit(multiThreaded, i, j)
@@ -223,6 +229,11 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(len(f)):
             for j in range(n):
+
+                # If infeasible, then don't even attempt updating global best
+                if infeasible(pBitStrings[i][j], seq, ops):
+                    break
+
                 # update global best if applicable
                 if i == 0:  # numOfAlignedChars
                     strings = bitsToStrings(pBitStrings[i][j], seq)
@@ -257,8 +268,8 @@ def testing(seqs, i, iterations):
     logging.info("maxIter = " + str(iterations))
 
     print(str(iterations) + " iterations:")
-    t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), 500,
-                 [float('inf'), -float('inf')], iterations)
+    t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), iterations,
+                 [float('inf'), -float('inf')], iterations, [lt, gt])
 
     aligns = []
     inserts = []
@@ -278,6 +289,7 @@ def testing(seqs, i, iterations):
         logging.info(numOfInsertedIndels(res[1], seqs))
         print(numOfInsertedIndels(res[1], seqs))
 
+    logging.info("Infeasible Sols: " + str((numOfInfeasibleSols / (30 * 2 * iterations)) * 100) + "%")
     print("Infeasible Sols: " + str((numOfInfeasibleSols / (30 * 2 * iterations)) * 100) + "%")
 
 
@@ -285,6 +297,7 @@ logging.basicConfig(filename="mpampso " + str(datetime.datetime.now().strftime("
                     level=logging.INFO,
                     format='%(message)s')
 
+'''
 AB000177 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgcaacagcaccagcaggtgatacaccaaatcagatgcctcattcttcagctcaaagcggtcatttaccgttgcggccagtgcggttt"
 AB000178 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgttggtgccagtgcggttt"
 AB000179 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgtcgcggccagtgcagttt"
@@ -297,14 +310,16 @@ testing(strs, 2, 2500)
 testing(strs, 3, 5000)
 testing(strs, 3, 7500)
 testing(strs, 4, 10000)
+'''
+
+
+testing(test1, 1, 5000)
+testing(test2, 2, 5000)
+testing(test3, 3, 5000)
+testing(test4, 4, 5000)
+testing(test5, 5, 5000)
+testing(test6, 6, 5000)
+testing(test7, 7, 5000)
 
 '''
-testing(test1, 1)
-testing(test2, 2)
-testing(test3, 3)
-testing(test4, 4)
-testing(test5, 5)
-testing(test6, 6)
-testing(test7, 7)
-
 #os.system('shutdown -s') # shutdown computer'''

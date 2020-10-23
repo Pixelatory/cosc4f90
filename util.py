@@ -12,36 +12,35 @@ from typing import Dict, List, Tuple
 """
 
 
-def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasibility=False, op=None):
+def aggregatedFunction(bitmatrix, seq, w1, w2, checkInfeasibility=False, ops=None):
     """A maximization aggregated fitness function that follows the following formula:
 
     f(x) = w1 * numOfAlignedChars(x) + w2 * (nMax - nI),\n
     where nMax is the number of total indels,\n
     and nI is the number of indels in-between characters.
 
-    Note: if the position vector is invalid and infeasible is true, then -float('inf') is returned
+    Note: if the bitmatrix is invalid and infeasible is true, then -float('inf') is returned
 
 
-    :param bitmatrix: position vector
     :type bitmatrix: List[List[int]]
     :param seq: sequences to be aligned
     :type seq: List[str]
     :param w1: weight coefficient for number of aligned characters
     :type w1: float
-    :param w2: weight coefficient for number of leading indels used
+    :param w2: weight coefficient for number of inserted indels
     :type w2: float
-    :param checkInfeasibility: whether or not a position can be infeasable
+    :param checkInfeasibility: whether or not a position can be infeasible
     :type checkInfeasibility: bool
-    :param op: how to compare between count of 0 bits in row, and the length of the sequence
-    :type op: (int, int) -> bool
+    :param ops: how to compare between count of 0 bits in row, and the length of the sequence
+    :type ops: List[(int, int) -> bool]
     :rtype: float
     :return: fitness value
     """
 
-    if checkInfeasibility and op is None:
+    if checkInfeasibility and ops is None:
         raise Exception("Cannot check infeasibility with a None operator")
 
-    if checkInfeasibility and infeasible(bitmatrix, seq, op):
+    if checkInfeasibility and infeasible(bitmatrix, seq, ops):
         return -float('inf')
 
     strings = bitsToStrings(bitmatrix, seq)
@@ -111,7 +110,7 @@ def maxNumOfIndels(bitmatrix, seq):
     return count
 
 
-def infeasible(bitmatrix, seq, op):
+def infeasible(bitmatrix, seq, ops):
     """Determines if a bitmatrix and sequence combination is infeasible.
 
     Counts the number of 0 bits in each row of the bitmatrix, and if it
@@ -122,10 +121,11 @@ def infeasible(bitmatrix, seq, op):
     usually it is >, <, =. For easy access to these use the operator
     module.
 
-    Ex. When using >, result is True when [0's count] > [length of string]
+    Ex. Say ops is [>, <], then bitmatrix is infeasible when # of 0's > # of chars,
+    and when # of 0's < # of chars. Thus it will only be feasible when # of 0's = # of chars.
 
-    :type op: (int, int) -> bool
-    :param op: comparison of (count of 0 bits in row, length of sequence)
+    :type ops: List[(int, int) -> bool]
+    :param ops: list of comparisons where if result is True, then bitmatrix is infeasible
     :type bitmatrix: List[List[int]]
     :type seq: List[str]
 
@@ -136,8 +136,9 @@ def infeasible(bitmatrix, seq, op):
             if bit == 0:
                 count += 1
 
-        if op(count, len(seq[i])):
-            return True
+        for op in ops:
+            if op(count, len(seq[i])):
+                return True
 
 
 def bitsToStrings(bitmatrix, seq):
@@ -307,9 +308,12 @@ def archiveGuide(seq, sArchive, bmidx, distidx, k):
     :type bmidx: int
     :type distidx: int
     :type k: int
-    :rtype: List[float]
-    :returns: Position vector
+    :rtype: List[float] or None
+    :returns: Position vector or None (if sArchive is empty)
     """
+    if len(sArchive) == 0:
+        return None
+
     updateCrowdingDistances(seq, sArchive, bmidx, distidx)
 
     idx = random.randint(0, len(sArchive) - 1)
@@ -361,7 +365,7 @@ def theSame(x, y):
     return True
 
 
-def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
+def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit, ops):
     """Adds solution x to archive a if x is not dominated by any archive solutions.
 
     After adding, if any particles in the archive are now dominated, then they are removed.
@@ -377,6 +381,8 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
     :type distidx: int
     :type archiveLimit: int
     :param archiveLimit: Max number of particles allowed in the archive
+    :type ops: List[(float, float) -> bool]
+    :param ops: operators that will check for infeasibility
     :rtype: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
     """
     if type(x) is list and len(seq) == len(x):  # means it's List[List[int]]
@@ -386,7 +392,11 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
     else:
         raise Exception("Invalid parameter x, must be ([float], [[int]]) or [[int]]")
 
-    aDominated = []  # all the archive components that are dominated by x
+    # If the bitmatrix is infeasible, don't even try putting it into archive
+    if infeasible(bm, seq, ops):
+        return sArchive
+
+    aDominated = []  # all the archive elements that are dominated by x
 
     # First, check that this new solution dominates every archive solution,
     # and that the values (bitstring and position) aren't repeated
@@ -439,6 +449,15 @@ def mkdir(path):
         os.mkdir(path)
     except FileExistsError:
         pass
+
+
+def Sigmoid(x):
+    """The classic sigmoid function.
+
+    :type x: float
+    :rtype: float
+    """
+    return 1 / (1 + math.exp(-x))
 
 
 test1 = ["AGQYHECK", "AFGPWERKYV", "ASWIELKV"]

@@ -1,10 +1,11 @@
 import random
 import math
 import datetime
-import copy
 import concurrent.futures
 import logging
 
+from copy import deepcopy
+from statistics import stdev
 from operator import lt
 from typing import List
 from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, \
@@ -71,8 +72,8 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         :param w1: weight coefficient for number of aligned characters
         :type w2: float
         :param w2: weight coefficient for number of leading indels used
-        :rtype: (List[float], List[List[int]])
-        :returns: (global best position, global best bitmatrix)
+        :rtype: (List[float], List[List[int]], int)
+        :returns: (global best position, global best bitmatrix, numOfInfeasibleSols)
     """
 
     # Checking for trivial errors first
@@ -96,10 +97,11 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         genInterval[1] = tmp
 
     # Initialize the data containers
-    pPositions = []
-    pPersonalBests = []
-    pVelocities = []
-    pBitStrings = []
+    pPositions: List[List[float]] = []
+    pPersonalBests: List[List[float]] = []
+    pVelocities: List[List[float]] = []
+    pBitStrings: List[List[List[int]]] = []
+    numOfInfeasibleSols: int = 0
 
     def fitness(bitmatrix):
         """
@@ -114,7 +116,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         :returns: Fitness value of bit string
         """
 
-        return f(bitmatrix, seq, w1, w2, True, lt)
+        return f(bitmatrix, seq, w1, w2, True, [lt])
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -144,9 +146,14 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         pVelocities.append(velocity)
         pBitStrings.append(bitstring)
 
-        if fitness(bitstring) > fitness(gBest["bitstring"]):
-            gBest["pos"] = copy.deepcopy(position)
-            gBest["bitstring"] = copy.deepcopy(bitstring)
+        tmpScore = fitness(bitstring)
+        if tmpScore > fitness(gBest["bitstring"]):
+            gBest["pos"] = deepcopy(position)
+            gBest["bitstring"] = deepcopy(bitstring)
+
+        # Infeasible solution, inc numOfInfeasibleSols count
+        if tmpScore == -float('inf'):
+            numOfInfeasibleSols += 1
 
     # This is where the iterations begin
     it = 0  # iteration count
@@ -176,19 +183,24 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
             bitstring = genBitMatrix(pPositions[i], seq, colLength, genInterval)
 
             # update personal best if applicable
-            if fitness(bitstring) > fitness(pBitStrings[i]):  # update personal best if applicable
-                pPersonalBests[i] = copy.deepcopy(pPositions[i])
-                pBitStrings[i] = copy.deepcopy(bitstring)
+            tmpScore = fitness(bitstring)
+            if tmpScore > fitness(pBitStrings[i]):  # update personal best if applicable
+                pPersonalBests[i] = deepcopy(pPositions[i])
+                pBitStrings[i] = deepcopy(bitstring)
+
+            # Infeasible solution, inc numOfInfeasibleSols count
+            if tmpScore == -float('inf'):
+                numOfInfeasibleSols += 1
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):
             if fitness(pBitStrings[i]) > fitness(gBest["bitstring"]):  # update global best if applicable
-                gBest["pos"] = copy.deepcopy(pPositions[i])
-                gBest["bitstring"] = copy.deepcopy(pBitStrings[i])
+                gBest["pos"] = deepcopy(pPositions[i])
+                gBest["bitstring"] = deepcopy(pBitStrings[i])
 
         it = it + 1
 
-    return gBest["pos"], gBest["bitstring"]
+    return gBest["pos"], gBest["bitstring"], numOfInfeasibleSols
 
 
 # ----TESTING AREA----#
@@ -219,29 +231,43 @@ def testAMPSOFuncWeight(seq, w1, w2):
     bestInserted = 0
     bestAligned = 0
     bestBitString = []
+    scores = []
+    inserts = []
+    aligns = []
 
+    # Just logging stuff here and printing to screen
     logging.info("Started " + str(datetime.datetime.now().time()))
     logging.info("w1: " + str(w1) + " w2: " + str(w2))
     print("Started " + str(datetime.datetime.now().time()))
     print("w1:", w1, "w2:", w2)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-        e = []
+    e = []
+
+    # Multi-threading all 30 runs of the testing
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(30):
-            # print("Created " + str(i))
             e.append(
-                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], 30, 0.729844, 1.49618,
-                                1.49618, float('inf'), 500, float('inf'), 5000, aggregatedFunction, w1, w2))
+                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], 30, 0.7, 2,
+                                2, float('inf'), 500, float('inf'), 5000, aggregatedFunction, w1, w2))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
+            pos = result[0]
+            matrix = result[1]
+            numOfInfeasibleSols = result[2]
 
-            logging.info("A result: " + str(result[0]))
-            print("A result: " + str(result[0]))
+            # Just logging and printing to screen
+            logging.info("A result: " + str(pos))
+            logging.info("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
+            print("A result: " + str(pos))
+            print("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
 
-            score = aggregatedFunction(result[1], seq, w1, w2, False)
-            aligned = numOfAlignedChars(bitsToStrings(result[1], seq))
-            inserted = numOfInsertedIndels(result[1], seq)
+            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt])
+            aligned = numOfAlignedChars(bitsToStrings(matrix, seq))
+            inserted = numOfInsertedIndels(matrix, seq)
+            scores.append(score)
+            aligns.append(aligned)
+            inserts.append(inserted)
 
             sumScore += score
             sumAligned += aligned
@@ -252,15 +278,19 @@ def testAMPSOFuncWeight(seq, w1, w2):
 
             if score > bestScore:
                 bestAligned = aligned
-                bestPos = result
+                bestPos = pos
                 bestScore = score
                 bestInserted = inserted
-                bestBitString = result[1]
+                bestBitString = matrix
 
             logging.info("\tBest Pos: " + str(bestPos))
             logging.info("\tBest Score: " + str(bestScore))
             print("\tBest Pos: " + str(bestPos))
             print("\tBest Score: " + str(bestScore))
+
+    s = stdev(scores)
+    i = stdev(inserts)
+    a = stdev(aligns)
 
     logging.info("Best Score: " + str(bestScore))
     logging.info("Avg Score: " + str(sumScore / 30))
@@ -268,12 +298,18 @@ def testAMPSOFuncWeight(seq, w1, w2):
     logging.info("Avg Aligned: " + str(sumAligned / 30))
     logging.info("Best Inserted: " + str(bestInserted))
     logging.info("Avg Inserted:" + str(sumInserted / 30))
+    logging.info("St. Dev. Score: " + str(s))
+    logging.info("St. Dev. Inserts: " + str(i))
+    logging.info("St. Dev. Aligns: " + str(a))
     print("Best Score:", bestScore)
     print("Avg Score:", sumScore / 30)
     print("Best Aligned:", bestAligned)
     print("Avg Aligned:", sumAligned / 30)
     print("Best Inserted:", bestInserted)
     print("Avg Inserted:", sumInserted / 30)
+    print("St. Dev. Score: " + str(s))
+    print("St. Dev. Inserts: " + str(i))
+    print("St. Dev. Aligns: " + str(a))
 
     for string in bitsToStrings(bestBitString, seq):
         logging.info(string)

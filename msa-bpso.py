@@ -3,11 +3,13 @@ import math
 import datetime
 import logging
 import concurrent.futures
-import copy
+
+from copy import deepcopy
+from statistics import stdev
 from typing import List
 from operator import lt
 from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, \
-    test7, numOfAlignedChars, numOfInsertedIndels
+    test7, numOfAlignedChars, numOfInsertedIndels, Sigmoid
 
 """
     BPSO for the MSA Problem
@@ -15,14 +17,29 @@ from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, te
         
     Acknowledgement goes towards: 
     
-    1. A Comparison of Binary Particle Swarm Optimization and Angle Modulated Particle 
-    Swarm Optimization for Multiple Sequence Alignment (unknown)
-    
-    2. Multiple Sequence Alignment Based on a Binary 
+    1. Multiple Sequence Alignment Based on a Binary 
     Particle Swarm Optimization Algorithm (Hai-Xia Long, Wen-Bo Xu, Jun Sun, Wen-Juan Ji)
     
-    1. Helped me reference that the BPSO works correctly to this person's studies
-    2. Helped me reference how the MSA problem should be represented in a BPSO format
+    1. Helped me reference how the MSA problem should be represented in a BPSO format
+    
+    Note of the imported functions to reduce confusion in code:
+    - deepcopy (from copy)
+    - stdev (from stdev)
+    - List (from typing)
+    - lt (from operator)
+    - aggregatedFunction (from util)
+    - bitsToString (from util)
+    - getLongestSeqDict (from util)
+    - test1 (from util)
+    - test2 (from util)
+    - test3 (from util)
+    - test4 (from util)
+    - test5 (from util)
+    - test6 (from util)
+    - test7 (from util)
+    - numOfAlignedChars (from util)
+    - numOfInsertedIndels (from util)
+    - Sigmoid (from util)
 """
 
 
@@ -47,15 +64,15 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: (List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float
+    :type f: (List[List[int]], List[str], float, float, bool, [(int, int) -> bool]) -> float
     :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
     :type w2: float
     :param w2: weight coefficient for number of leading indels used
 
-    :rtype: List[List[int]]
-    :returns: global best position
+    :rtype: (List[List[int]], int)
+    :returns: (global best position, numOfInfeasibleSols)
 
     Initialization Process:
         Particle positions: each xi = U(0, 1), where U is uniformly distributed random value that's either 0 or 1
@@ -99,7 +116,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
         :rtype: float
         :returns: Fitness value of position vector
         """
-        return f(pos, seq, w1, w2, True, lt)
+        return f(pos, seq, w1, w2, True, [lt])
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -134,7 +151,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
         pVelocities.append(velocity)
 
         if fitness(position) > fitness(gBestPos):
-            gBestPos = copy.deepcopy(position)
+            gBestPos = deepcopy(position)
 
     # This is where the iterations begin
     it = 0  # iteration count
@@ -165,27 +182,21 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
 
             # update personal best if applicable
             if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
-                pPersonalBests[i] = copy.deepcopy(pPositions[i])
-
-            
+                pPersonalBests[i] = deepcopy(pPositions[i])
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):
-            if fitness(pPositions[i]) > fitness(gBestPos):  # update global best if applicable
-                gBestPos = copy.deepcopy(pPositions[i])
+            pFit = fitness(pPositions[i])
+
+            if pFit == float('-inf'):  # Updates the counter of infeasible solutions
+                numOfInfeasibleSols += 1
+
+            if pFit > fitness(gBestPos):  # update global best if applicable
+                gBestPos = deepcopy(pPositions[i])
 
         it = it + 1
 
-    return gBestPos
-
-
-def Sigmoid(x):
-    """The classic sigmoid function.
-
-    :type x: float
-    :rtype: float
-    """
-    return 1 / (1 + math.exp(-x))
+    return gBestPos, numOfInfeasibleSols
 
 
 # ----TESTING AREA----#
@@ -213,7 +224,11 @@ def testBPSOFuncWeight(seq, w1, w2):
     sumAligned = 0
     bestInserted = 0
     bestAligned = 0
+    scores = []
+    inserts = []
+    aligns = []
 
+    # Just logging stuff here and printing to screen
     logging.info("Started " + str(datetime.datetime.now().time()))
     logging.info("w1: " + str(w1) + " w2: " + str(w2))
     print("Started " + str(datetime.datetime.now().time()))
@@ -221,20 +236,29 @@ def testBPSOFuncWeight(seq, w1, w2):
 
     e = []
 
+    # Multi-threading all 30 runs of the testing
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(30):
             e.append(
-                executor.submit(MSABPSO, seq, 30, 0.9, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2))
+                executor.submit(MSABPSO, seq, 30, 0.99, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
+            matrix = result[0]
+            numOfInfeasibleSols = result[1]
 
-            logging.info("A result: " + str(result))
-            print("A result: " + str(result))
+            # Just logging and printing to screen
+            logging.info("A result: " + str(bestPos))
+            logging.info("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
+            print("A result: " + str(matrix))
+            print("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
 
-            score = aggregatedFunction(result, seq, w1, w2, False)
-            aligned = numOfAlignedChars(bitsToStrings(result, seq))
-            inserted = numOfInsertedIndels(result, seq)
+            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt])
+            aligned = numOfAlignedChars(bitsToStrings(matrix, seq))
+            inserted = numOfInsertedIndels(matrix, seq)
+            scores.append(score)
+            aligns.append(aligned)
+            inserts.append(inserted)
 
             sumScore += score
             sumAligned += aligned
@@ -245,7 +269,7 @@ def testBPSOFuncWeight(seq, w1, w2):
 
             if score > bestScore:
                 bestAligned = aligned
-                bestPos = result
+                bestPos = matrix
                 bestScore = score
                 bestInserted = inserted
 
@@ -254,18 +278,29 @@ def testBPSOFuncWeight(seq, w1, w2):
             print("\tBest Pos: " + str(bestPos))
             print("\tBest Score: " + str(bestScore))
 
+    s = stdev(scores)
+    i = stdev(inserts)
+    a = stdev(aligns)
+
     logging.info("Best Score: " + str(bestScore))
     logging.info("Avg Score: " + str(sumScore / 30))
     logging.info("Best Aligned: " + str(bestAligned))
     logging.info("Avg Aligned: " + str(sumAligned / 30))
     logging.info("Best Inserted: " + str(bestInserted))
     logging.info("Avg Inserted:" + str(sumInserted / 30))
+    logging.info("St. Dev. Score: " + str(s))
+    logging.info("St. Dev. Inserts: " + str(i))
+    logging.info("St. Dev. Aligns: " + str(a))
     print("Best Score:", bestScore)
     print("Avg Score:", sumScore / 30)
     print("Best Aligned:", bestAligned)
     print("Avg Aligned:", sumAligned / 30)
     print("Best Inserted:", bestInserted)
     print("Avg Inserted:", sumInserted / 30)
+    print("Standard Deviation: " + str(s))
+    print("St. Dev. Score: " + str(s))
+    print("St. Dev. Inserts: " + str(i))
+    print("St. Dev. Aligns: " + str(a))
 
     for string in bitsToStrings(bestPos, seq):
         logging.info(string)
