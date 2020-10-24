@@ -9,7 +9,7 @@ from statistics import stdev
 from operator import lt
 from typing import List
 from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, \
-    genBitMatrix, test1, test2, test3, test4, test5, test6, test7
+    genBitMatrix, test1, test2, test3, test4, test5, test6, test7, infeasible
 
 """
     AMPSO for the MSA Problem
@@ -19,7 +19,7 @@ from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsT
 """
 
 
-def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
+def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, ops):
     """The AMPSO algorithm fitted for the MSA problem.
 
     Initialization Process:
@@ -64,7 +64,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         :param term: termination criteria (set to float('inf') for no fitness termination)
         :type maxIter: int
         :param maxIter: maximum iteration limit (> 0)
-        :type f: (List[List[int]], List[str], float, float, bool, (int, int) -> bool) -> float
+        :type f: (List[List[int]], List[str], float, float, bool, List[(int, int) -> bool]) -> float
         :param f: fitness function (bitmatrix, sequences, weight coefficient 1, weight coefficient 2, checkInfeasability,
         operator)
 
@@ -72,6 +72,8 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         :param w1: weight coefficient for number of aligned characters
         :type w2: float
         :param w2: weight coefficient for number of leading indels used
+        :type ops: List[(float, float) -> bool]
+        :param ops: operators that will check for infeasibility (See util.py -> infeasible)
         :rtype: (List[float], List[List[int]], int)
         :returns: (global best position, global best bitmatrix, numOfInfeasibleSols)
     """
@@ -116,7 +118,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         :returns: Fitness value of bit string
         """
 
-        return f(bitmatrix, seq, w1, w2, True, [lt])
+        return f(bitmatrix, seq, w1, w2, True, ops)
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -147,13 +149,15 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
         pBitStrings.append(bitstring)
 
         tmpScore = fitness(bitstring)
+
+        # Infeasible solution, increment numOfInfeasibleSols count and don't test for gBest
+        if tmpScore == -float('inf'):
+            numOfInfeasibleSols += 1
+            continue
+
         if tmpScore > fitness(gBest["bitstring"]):
             gBest["pos"] = deepcopy(position)
             gBest["bitstring"] = deepcopy(bitstring)
-
-        # Infeasible solution, inc numOfInfeasibleSols count
-        if tmpScore == -float('inf'):
-            numOfInfeasibleSols += 1
 
     # This is where the iterations begin
     it = 0  # iteration count
@@ -184,15 +188,19 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
 
             # update personal best if applicable
             tmpScore = fitness(bitstring)
-            if tmpScore > fitness(pBitStrings[i]):  # update personal best if applicable
-                pPersonalBests[i] = deepcopy(pPositions[i])
-                pBitStrings[i] = deepcopy(bitstring)
 
-            # Infeasible solution, inc numOfInfeasibleSols count
+            # Infeasible solution, increment numOfInfeasibleSols count and don't test for personal best
             if tmpScore == -float('inf'):
                 numOfInfeasibleSols += 1
+                continue
+
+            # Feasible sol, so update personal best if applicable
+            if tmpScore > fitness(pBitStrings[i]):
+                pPersonalBests[i] = deepcopy(pPositions[i])
+                pBitStrings[i] = bitstring
 
         # update the global best after all positions were changed (synchronous PSO)
+        # Notice: no need to check for infeasibility here, cause if it was, wouldn't be added to personal best anyways
         for i in range(n):
             if fitness(pBitStrings[i]) > fitness(gBest["bitstring"]):  # update global best if applicable
                 gBest["pos"] = deepcopy(pPositions[i])

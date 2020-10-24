@@ -143,8 +143,9 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
             pVelocities[i].append(velocity)
             pBitStrings[i].append(bitstring)
 
-            if infeasible(bitstring, seq, ops):
+            if infeasible(bitstring, seq, ops) or position[1] * position[2] == 0:
                 numOfInfeasibleSols += 1
+                continue
 
             if i == 0:  # numOfAlignedChars
                 strings = bitsToStrings(bitstring, seq)
@@ -189,7 +190,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
         bitstring = genBitMatrix(pPositions[i][j], seq, colLength, genInterval)
 
         # Checking for infeasibility
-        if infeasible(bitstring, seq, [lt, gt]):
+        if infeasible(bitstring, seq, ops) or pPositions[i][j][1] * pPositions[i][j][2] == 0:
             lock.acquire(True)  # reducing concurrency-related errors for infeasible particle count
             numOfInfeasibleSols += 1
             lock.release()
@@ -209,30 +210,19 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
 
     # This is where the iterations begin
     it = 0  # iteration count
-    while it < maxIter:
-        # if the termination criteria is met, then stop the PSO and return values
-        #  numOfAlignedChars                                            numOfInsertedIndels
-        if f[0](bitsToStrings(gBest[0]["bitstring"], seq)) > term[0] or f[1](gBest[1]["bitstring"], seq) < term[1]:
-            return sArchive
-
-        # Attempt addition of all particles into archive
-        for i in range(len(f)):
-            for j in range(n):
-                sArchive = addToArchive(seq, sArchive, (pPositions[i][j], pBitStrings[i][j]), 1, 2, len(f) * n, ops)
-
-        # Perform velocity/position/personal best updates for all particles
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-            for i in range(len(f)):
-                for j in range(n):
-                    executor.submit(multiThreaded, i, j)
+    while it < maxIter \
+            and f[0](bitsToStrings(gBest[0]["bitstring"], seq)) < term[0] \
+            and f[1](gBest[1]["bitstring"], seq) > term[1]:
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(len(f)):
             for j in range(n):
 
-                # If infeasible, then don't even attempt updating global best
-                if infeasible(pBitStrings[i][j], seq, ops):
-                    break
+                # If infeasible, then don't even attempt updating global best or adding to archive
+                if infeasible(pBitStrings[i][j], seq, ops) or pPositions[i][j][1] * pPositions[i][j][2] == 0:
+                    continue
+
+                sArchive = addToArchive(seq, sArchive, (pPositions[i][j], pBitStrings[i][j]), 1, 2, len(f) * n)
 
                 # update global best if applicable
                 if i == 0:  # numOfAlignedChars
@@ -245,6 +235,12 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
                     if f[i](pBitStrings[i][j], seq) < f[i](gBest[i]["bitstring"], seq):
                         gBest[i]["pos"] = deepcopy(pPositions[i][j])
                         gBest[i]["bitstring"] = deepcopy(pBitStrings[i][j])
+
+        # Perform velocity/position/personal best updates for all particles
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for i in range(len(f)):
+                for j in range(n):
+                    executor.submit(multiThreaded, i, j)
 
         # update the lambda parameter (linearly increasing)
         l += 1 / maxIter
@@ -268,8 +264,8 @@ def testing(seqs, i, iterations):
     logging.info("maxIter = " + str(iterations))
 
     print(str(iterations) + " iterations:")
-    t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), iterations,
-                 [float('inf'), -float('inf')], iterations, [lt, gt])
+    t = MSAMGPSO(seqs, [-2.0, 2.0], 30, 0.75, 1.15, 1.7, 1.05, 3, 2, 500,
+                 [float('inf'), -float('inf')], iterations, [lt])
 
     aligns = []
     inserts = []
@@ -311,7 +307,6 @@ testing(strs, 3, 5000)
 testing(strs, 3, 7500)
 testing(strs, 4, 10000)
 '''
-
 
 testing(test1, 1, 5000)
 testing(test2, 2, 5000)

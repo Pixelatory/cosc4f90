@@ -43,7 +43,7 @@ from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, te
 """
 
 
-def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
+def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, ops):
     """The BPSO algorithm fitted for the MSA problem.
 
     :type seq: List[str]
@@ -64,12 +64,14 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
     :param term: termination criteria (set to float('inf') for no fitness termination)
     :type maxIter: int
     :param maxIter: maximum iteration limit (> 0)
-    :type f: (List[List[int]], List[str], float, float, bool, [(int, int) -> bool]) -> float
+    :type f: (List[List[int]], List[str], float, float, bool, List[(int, int) -> bool]) -> float
     :param f: fitness function (position vector, sequences, weight coefficient 1, weight coefficient 2)
     :type w1: float
     :param w1: weight coefficient for number of aligned characters
     :type w2: float
     :param w2: weight coefficient for number of leading indels used
+    :param ops: operators that will check for infeasibility (See util.py -> infeasible)
+    :type ops: List[(float, float) -> bool]
 
     :rtype: (List[List[int]], int)
     :returns: (global best position, numOfInfeasibleSols)
@@ -116,7 +118,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
         :rtype: float
         :returns: Fitness value of position vector
         """
-        return f(pos, seq, w1, w2, True, [lt])
+        return f(pos, seq, w1, w2, True, ops)
 
     # Just some helper variables to make code more readable
     numOfSeq = len(seq)  # number of sequences
@@ -181,15 +183,23 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2):
                     pPositions[i][j][x] = 1 if random.uniform(0, 1) < probability else 0
 
             # update personal best if applicable
-            if fitness(pPositions[i]) > fitness(pPersonalBests[i]):  # update personal best if applicable
+            tmpScore = fitness(pPositions[i])
+
+            # Infeasible solution, increment counter and don't attempt adding to personal best
+            if tmpScore == -float('inf'):
+                numOfInfeasibleSols += 1
+                continue
+
+            if tmpScore > fitness(pPersonalBests[i]):  # update personal best if applicable
                 pPersonalBests[i] = deepcopy(pPositions[i])
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(n):
             pFit = fitness(pPositions[i])
 
-            if pFit == float('-inf'):  # Updates the counter of infeasible solutions
-                numOfInfeasibleSols += 1
+            # Infeasible solution, don't attempt adding to global best
+            if pFit == -float('inf'):
+                continue
 
             if pFit > fitness(gBestPos):  # update global best if applicable
                 gBestPos = deepcopy(pPositions[i])

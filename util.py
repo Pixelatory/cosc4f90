@@ -334,11 +334,16 @@ def updateCrowdingDistances(seq, sArchive, bmidx, distidx):
     :type distidx: int
     :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
     """
+
+    # First, reset all distances
+    for s in sArchive:
+        s[distidx] = 0
+
     for i in range(2):
         if i == 0:  # numOfAlignedChars
-            sArchive.sort(key=lambda x: -numOfAlignedChars(bitsToStrings(x[bmidx], seq)))
+            sArchive.sort(key=lambda x: numOfAlignedChars(bitsToStrings(x[bmidx], seq)), reverse=True)
         else:  # numOfInsertedIndels
-            sArchive.sort(key=lambda x: numOfInsertedIndels(x[bmidx], seq))
+            sArchive.sort(key=lambda x: numOfInsertedIndels(x[bmidx], seq), reverse=True)
 
         # set first and last to infinite distance
         sArchive[0][distidx] = sArchive[len(sArchive) - 1][distidx] = float('inf')
@@ -365,7 +370,7 @@ def theSame(x, y):
     return True
 
 
-def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit, ops):
+def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit):
     """Adds solution x to archive a if x is not dominated by any archive solutions.
 
     After adding, if any particles in the archive are now dominated, then they are removed.
@@ -381,8 +386,6 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit, ops):
     :type distidx: int
     :type archiveLimit: int
     :param archiveLimit: Max number of particles allowed in the archive
-    :type ops: List[(float, float) -> bool]
-    :param ops: operators that will check for infeasibility
     :rtype: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
     """
     if type(x) is list and len(seq) == len(x):  # means it's List[List[int]]
@@ -391,10 +394,6 @@ def addToArchive(seq, sArchive, x, bmidx, distidx, archiveLimit, ops):
         bm = x[1]
     else:
         raise Exception("Invalid parameter x, must be ([float], [[int]]) or [[int]]")
-
-    # If the bitmatrix is infeasible, don't even try putting it into archive
-    if infeasible(bm, seq, ops):
-        return sArchive
 
     aDominated = []  # all the archive elements that are dominated by x
 
