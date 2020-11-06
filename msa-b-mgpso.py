@@ -3,11 +3,11 @@ import copy
 import datetime
 import logging
 import math
-import os
 import random
 from typing import List
-from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, genBitMatrix, bitsToStrings, archiveGuide, \
-    addToArchive, test1, test2, test3, test4, test5, test6, test7
+
+from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, bitsToStrings, archiveGuide, \
+    addToArchive, infeasible
 
 """
     MGPSO for the MSA Problem (using binary representation)
@@ -17,7 +17,7 @@ from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, genB
 """
 
 
-def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
+def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
     # Checking for trivial errors first
     if n < 1:
         raise Exception("Swarm size cannot be < 1")
@@ -34,6 +34,7 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
     pPersonalBests: List[List[List[List[int]]]] = []  # particle personal best position
     pVelocities: List[List[List[List[float]]]] = []  # particle velocities
     sArchive: List[List[List[List[int]], float]] = []  # swarm archive (the pareto front)
+    numOfInfeasibleSols: int = 0
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -114,6 +115,10 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
 
                 pPositions[i][j][x][y] += pVelocities[i][j][x][y]
 
+        # Don't update personal best if the particle position is infeasible
+        if infeasible(pPositions[i][j], seq, ops):
+            return
+
         # update personal best if applicable
         if i == 0:  # numOfAlignedChars
             strings = bitsToStrings(pPositions[i][j], seq)
@@ -126,24 +131,19 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
 
     # This is where the iterations begin
     it = 0  # iteration count
-    while it < maxIter:
-        # if the termination criteria is met, then stop the PSO and return values
-        #  numOfAlignedChars                               numOfInsertedIndels
-        if f[0](bitsToStrings(gBest[0], seq)) > term[0] or f[1](gBest[1], seq) < term[1]:
-            return sArchive
-
-        for i in range(len(f)):
-            for j in range(n):
-                sArchive = addToArchive(seq, sArchive, pPositions[i][j], 0, 1, len(f) * n)
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            for i in range(len(f)):
-                for j in range(n):
-                    executor.submit(multiThreaded, i, j)
+    while it < maxIter and f[0](bitsToStrings(gBest[0], seq)) < term[0] \
+            and f[1](gBest[1], seq) > term[1]:
 
         # update the global best after all positions were changed (synchronous PSO)
         for i in range(len(f)):
             for j in range(n):
+                # If infeasible, then don't even attempt updating global best or adding to archive
+                if infeasible(pPositions[i][j], seq, ops):
+                    numOfInfeasibleSols += 1
+                    continue
+
+                sArchive = addToArchive(seq, sArchive, pPositions[i][j], 0, 1, len(f) * n)
+
                 # update global best if applicable
                 if i == 0:  # numOfAlignedChars
                     strings = bitsToStrings(pPositions[i][j], seq)
@@ -154,8 +154,13 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter):
                     if f[i](pPositions[i][j], seq) < f[i](gBest[i], seq):
                         gBest[i] = copy.deepcopy(pPositions[i][j])
 
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for i in range(len(f)):
+                for j in range(n):
+                    executor.submit(multiThreaded, i, j)
+
         # update the lambda parameter (linearly increasing)
-        l += 1/maxIter
+        l += 1 / maxIter
 
         it = it + 1
 
@@ -213,5 +218,4 @@ testing(test5, 5)
 testing(test6, 6)
 testing(test7, 7)'''
 
-
-#os.system('%windir%\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,0') # sleep mode
+# os.system('%windir%\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,0') # sleep mode
