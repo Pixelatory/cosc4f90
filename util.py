@@ -298,7 +298,7 @@ def dominates(seq, bm1, bm2):
     return better
 
 
-def archiveGuide(seq, sArchive, bmidx, distidx, k):
+def archiveGuide(seq, sArchive, bmidx, distidx, rtrnidx, k):
     """Uses tournament selection where k is the number of particles to choose.
 
     Out of the k possible particles randomly selected, the least crowded particle wins the tournament.
@@ -307,8 +307,9 @@ def archiveGuide(seq, sArchive, bmidx, distidx, k):
     :type sArchive: List[List[List[float], List[List[int]], float]] | List[List[List[List[int]], float]]
     :type bmidx: int
     :type distidx: int
+    :type rtrnidx: int
     :type k: int
-    :rtype: List[float] or None
+    :rtype: List[float] or List[List[int]] or None
     :returns: Position vector or None (if sArchive is empty)
     """
     if len(sArchive) == 0:
@@ -320,10 +321,10 @@ def archiveGuide(seq, sArchive, bmidx, distidx, k):
 
     for i in range(k - 1):
         tmp = random.randint(0, len(sArchive) - 1)
-        if sArchive[tmp][2] > sArchive[idx][2]:
+        if sArchive[tmp][distidx] > sArchive[idx][distidx]:
             idx = tmp
 
-    return sArchive[idx][0]
+    return sArchive[idx][rtrnidx]
 
 
 def updateCrowdingDistances(seq, sArchive, bmidx, distidx):

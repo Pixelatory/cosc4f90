@@ -101,7 +101,6 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
     pBitStrings: List[List[List[List[int]]]] = []  # particle bit strings
     sArchive: List[List[List[float], List[List[int]], float]] = []  # swarm archive
     numOfInfeasibleSols: int = 0
-    lock = Lock()
 
     lSeq = getLongestSeqDict(seq)  # Longest sequence value dictionary
 
@@ -159,14 +158,14 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
                     gBest[i]["bitstring"] = deepcopy(bitstring)
 
     def multiThreaded(i, j):
-        nonlocal pPositions, pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, \
-            genInterval, f, k, l, numOfInfeasibleSols
+        nonlocal w, c1, c2, c3, pPositions, pVelocities, pBitStrings, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, \
+            colLength, genInterval, f, k, l, numOfInfeasibleSols
         # Within each subswarm, update each particle's velocity, position, and personal best
         # r1 and r2 are ~ U (0,1)
         r1 = random.random()
         r2 = random.random()
         r3 = random.random()
-        a = archiveGuide(seq, sArchive, 1, 2, k)
+        a = archiveGuide(seq, sArchive, 1, 2, 0, k)
 
         # update velocity and positions in every dimension
         for k in range(4):
@@ -189,11 +188,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
 
         bitstring = genBitMatrix(pPositions[i][j], seq, colLength, genInterval)
 
-        # Checking for infeasibility
         if infeasible(bitstring, seq, ops) or pPositions[i][j][1] * pPositions[i][j][2] == 0:
-            lock.acquire(True)  # reducing concurrency-related errors for infeasible particle count
-            numOfInfeasibleSols += 1
-            lock.release()
             return  # bitstring is infeasible, so do not update its personal best
 
         # update personal best if applicable
@@ -220,6 +215,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
 
                 # If infeasible, then don't even attempt updating global best or adding to archive
                 if infeasible(pBitStrings[i][j], seq, ops) or pPositions[i][j][1] * pPositions[i][j][2] == 0:
+                    numOfInfeasibleSols += 1
                     continue
 
                 sArchive = addToArchive(seq, sArchive, (pPositions[i][j], pBitStrings[i][j]), 1, 2, len(f) * n)
@@ -308,7 +304,7 @@ testing(strs, 3, 7500)
 testing(strs, 4, 10000)
 '''
 
-testing(test1, 1, 5000)
+testing(test1, 1, 2500)
 testing(test2, 2, 5000)
 testing(test3, 3, 5000)
 testing(test4, 4, 5000)

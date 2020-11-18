@@ -5,9 +5,10 @@ import logging
 import math
 import random
 from typing import List
+from operator import lt
 
 from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, bitsToStrings, archiveGuide, \
-    addToArchive, infeasible
+    addToArchive, infeasible, Sigmoid, test1
 
 """
     MGPSO for the MSA Problem (using binary representation)
@@ -93,27 +94,31 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
         pVelocities.append(newSwarmVelocities)
 
     def multiThreaded(i, j):
-        nonlocal pPositions, pVelocities, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, f, k
+        nonlocal w, c1, c2, c3, pPositions, pVelocities, pPersonalBests, gBest, vmaxiterlimit, vmax, seq, colLength, \
+            f, k, l
         # Within each subswarm, update each particle's velocity, position, and personal best
         # r1 and r2 are ~ U (0,1)
         r1 = random.random()
         r2 = random.random()
         r3 = random.random()
-        a = archiveGuide(seq, sArchive, 1, 2, k)
+        a = archiveGuide(seq, sArchive, 0, 1, 0, k)
 
         # update velocity and positions in every dimension
         for x in range(len(seq)):
             for y in range(len(seq[x])):
                 pVelocities[i][j][x][y] = w * pVelocities[i][j][x][y] + \
                                           r1 * c1 * (pPersonalBests[i][j][x][y] - pPositions[i][j][x][y]) + \
-                                          l * r2 * c2 * (gBest[i][x][y] - pPositions[i][j][x][y]) + \
-                                          (1 - l) * r3 * c3 * (a[x][y] - pPositions[i][j][x][y])
+                                          l * r2 * c2 * (gBest[i][x][y] - pPositions[i][j][x][y])
+
+                if a is not None:
+                    pVelocities[i][j][x][y] += (1 - l) * r3 * c3 * (a[x][y] - pPositions[i][j][x][y])
 
                 # velocity clamping
                 if vmaxiterlimit < it and (pVelocities[i][j][x][y] > vmax or pVelocities[i][j][x][y] < vmax):
                     pVelocities[i][j][x][y] = vmax
 
-                pPositions[i][j][x][y] += pVelocities[i][j][x][y]
+                probability = Sigmoid(pVelocities[i][j][x][y])
+                pPositions[i][j][x][y] = 1 if random.uniform(0, 1) < probability else 0
 
         # Don't update personal best if the particle position is infeasible
         if infeasible(pPositions[i][j], seq, ops):
@@ -164,7 +169,7 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
 
         it = it + 1
 
-    return sArchive
+    return sArchive, numOfInfeasibleSols
 
 
 def testing(seqs, i, iterations):
@@ -181,8 +186,8 @@ def testing(seqs, i, iterations):
 
     print(str(iterations) + " iterations:")
     t = MSAMGPSO(seqs, 30, 0.729844, 1.49618, 1.49618, 1.49618, 3, float('inf'), 500,
-                 [float('inf'), -float('inf')], iterations)
-    for res in t:
+                 [float('inf'), -float('inf')], iterations, [lt])
+    for res in t[0]:
         logging.info(res[0])
         print(res[0])
         for string in bitsToStrings(res[0], seqs):
@@ -193,11 +198,14 @@ def testing(seqs, i, iterations):
         logging.info(numOfInsertedIndels(res[0], seqs))
         print(numOfInsertedIndels(res[0], seqs))
 
+    print("Num of infeasible sols: " + str(t[1]) + " " + str(t[1] / (30 * 2 * iterations)))
+
 
 logging.basicConfig(filename="mgbpso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
                     level=logging.INFO,
                     format='%(message)s')
 
+'''
 AB000177 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgcaacagcaccagcaggtgatacaccaaatcagatgcctcattcttcagctcaaagcggtcatttaccgttgcggccagtgcggttt"
 AB000178 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgttggtgccagtgcggttt"
 AB000179 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgtcgcggccagtgcagttt"
@@ -210,6 +218,9 @@ testing(strs, 2, 2500)
 testing(strs, 3, 5000)
 testing(strs, 3, 7500)
 testing(strs, 4, 10000)
+'''
+testing(test1, 0, 2500)
+
 '''
 testing(test2, 2)
 testing(test3, 3)

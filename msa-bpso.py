@@ -250,7 +250,7 @@ def testBPSOFuncWeight(seq, w1, w2):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(30):
             e.append(
-                executor.submit(MSABPSO, seq, 30, 0.99, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2))
+                executor.submit(MSABPSO, seq, 30, 0.99, 2, 2, 4, 500, float('inf'), 5000, aggregatedFunction, w1, w2, [lt]))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
@@ -330,6 +330,7 @@ testBPSOFuncWeight(test1, 0.6, 0.4)
 testBPSOFuncWeight(test1, 0.5, 0.5)
 testBPSOFuncWeight(test1, 0.3, 0.7)
 
+'''
 logging.info("test 2")
 print("test 2")
 testBPSOFuncWeight(test2, 0.6, 0.4)
@@ -365,3 +366,4 @@ print("test 7")
 testBPSOFuncWeight(test7, 0.6, 0.4)
 testBPSOFuncWeight(test7, 0.5, 0.5)
 testBPSOFuncWeight(test7, 0.3, 0.7)
+'''
