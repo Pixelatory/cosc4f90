@@ -17,7 +17,6 @@ from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, bits
     Acknowledgement goes towards:
 """
 
-
 def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
     # Checking for trivial errors first
     if n < 1:

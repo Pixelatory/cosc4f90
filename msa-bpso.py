@@ -7,7 +7,7 @@ import concurrent.futures
 from copy import deepcopy
 from statistics import stdev
 from typing import List
-from operator import lt
+from operator import lt, gt
 from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, test2, test3, test4, test5, test6, \
     test7, numOfAlignedChars, numOfInsertedIndels, Sigmoid
 
@@ -263,7 +263,7 @@ def testBPSOFuncWeight(seq, w1, w2):
             print("A result: " + str(matrix))
             print("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
 
-            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt])
+            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt, gt])
             aligned = numOfAlignedChars(bitsToStrings(matrix, seq))
             inserted = numOfInsertedIndels(matrix, seq)
             scores.append(score)
@@ -324,13 +324,19 @@ logging.basicConfig(filename="bpso " + str(datetime.datetime.now().strftime("%Y-
                     level=logging.INFO,
                     format='%(message)s')
 
+test = ["FFABCD", "ABCDFF", "GGABCD", "ABCDGG"]
+print("testing")
+testBPSOFuncWeight(test, 0.6, 0.4)
+testBPSOFuncWeight(test, 0.5, 0.5)
+testBPSOFuncWeight(test, 0.3, 0.7)
+
+'''
 logging.info("test 1")
 print("test 1")
 testBPSOFuncWeight(test1, 0.6, 0.4)
 testBPSOFuncWeight(test1, 0.5, 0.5)
 testBPSOFuncWeight(test1, 0.3, 0.7)
 
-'''
 logging.info("test 2")
 print("test 2")
 testBPSOFuncWeight(test2, 0.6, 0.4)

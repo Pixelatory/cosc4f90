@@ -6,7 +6,7 @@ import logging
 
 from copy import deepcopy
 from statistics import stdev
-from operator import lt
+from operator import lt, gt
 from typing import List
 from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsToStrings, numOfInsertedIndels, \
     genBitMatrix, test1, test2, test3, test4, test5, test6, test7, infeasible
@@ -125,21 +125,26 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
     # The position column length is 20% greater than the total length of longest sequence (rounded up)
     colLength: int = math.ceil(lSeq["len"] * 1.2)
 
-    gBest = {
-        "pos": [0, 0, 0, 0]
-    }
+    # Ensure we start with a valid gBest particle
+    while True:
+        gBest = {
+            "pos": [random.uniform(-0.3, 0.3), random.uniform(0.5, 10), random.uniform(0.5, 10),
+                    random.uniform(-0.9, -0.5),
+                    random.uniform(-0.9, -0.5)]}
+        gBest["bitstring"] = genBitMatrix(gBest["pos"], seq, colLength, genInterval)
 
-    gBest["bitstring"] = genBitMatrix(gBest["pos"], seq, colLength, genInterval)
+        if fitness(gBest["bitstring"]) != -float('inf'):
+            break
 
     # Initializing the particles of swarm
     for i in range(n):
         position: List[float] = []
         velocity: List[float] = [0] * 4
 
-        position.append(random.uniform(-1, 1))  # coefficient a
-        position.append(random.uniform(0, 1))  # coefficient b
-        position.append(random.uniform(0, 1))  # coefficient c
-        position.append(random.uniform(-0.7, -0.9))  # coefficient d
+        position.append(random.uniform(-0.3, 0.3))  # coefficient a
+        position.append(random.uniform(0.5, 10))  # coefficient b
+        position.append(random.uniform(0.5, 10))  # coefficient c
+        position.append(random.uniform(-0.9, -0.5))  # coefficient d
 
         bitstring = genBitMatrix(position, seq, colLength, genInterval)
 
@@ -182,7 +187,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
                     elif pVelocities[i][j] < -vmax:
                         pVelocities[i][j] = -vmax
 
-                pPositions[i][j] = pPositions[i][j] + pVelocities[i][j]
+                pPositions[i][j] += pVelocities[i][j]
 
             bitstring = genBitMatrix(pPositions[i], seq, colLength, genInterval)
 
@@ -255,8 +260,8 @@ def testAMPSOFuncWeight(seq, w1, w2):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for i in range(30):
             e.append(
-                executor.submit(MSAAMPSO, seq, [-2.0, 2.0], 30, 0.7, 2,
-                                2, float('inf'), 500, float('inf'), 5000, aggregatedFunction, w1, w2))
+                executor.submit(MSAAMPSO, seq, [-100, 100], 30, 0.7, 2,
+                                2, float('inf'), 500, float('inf'), 5000, aggregatedFunction, w1, w2, [lt]))
 
         for future in concurrent.futures.as_completed(e):
             result = future.result()
@@ -270,7 +275,7 @@ def testAMPSOFuncWeight(seq, w1, w2):
             print("A result: " + str(pos))
             print("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
 
-            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt])
+            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt, gt])
             aligned = numOfAlignedChars(bitsToStrings(matrix, seq))
             inserted = numOfInsertedIndels(matrix, seq)
             scores.append(score)
@@ -331,6 +336,13 @@ logging.basicConfig(filename="ampso " + str(datetime.datetime.now().strftime("%Y
                     level=logging.INFO,
                     format='%(message)s')
 
+test = ["FFABCD", "ABCDFF", "GGABCD", "ABCDGG"]
+print("testing")
+testAMPSOFuncWeight(test, 0.6, 0.4)
+testAMPSOFuncWeight(test, 0.5, 0.5)
+testAMPSOFuncWeight(test, 0.3, 0.7)
+
+'''
 logging.info("test 1")
 print("test 1")
 testAMPSOFuncWeight(test1, 0.6, 0.4)
@@ -372,3 +384,4 @@ print("test 7")
 testAMPSOFuncWeight(test7, 0.6, 0.4)
 testAMPSOFuncWeight(test7, 0.5, 0.5)
 testAMPSOFuncWeight(test7, 0.3, 0.7)
+'''
