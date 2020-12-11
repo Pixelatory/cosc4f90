@@ -289,6 +289,10 @@ logging.basicConfig(filename="mpampso " + str(datetime.datetime.now().strftime("
                     level=logging.INFO,
                     format='%(message)s')
 
+
+test = ["FFABCD", "ABCDFF", "GGABCD", "ABCDGG"]
+print("testing")
+testing(test, 0, 5000)
 '''
 AB000177 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgcaacagcaccagcaggtgatacaccaaatcagatgcctcattcttcagctcaaagcggtcatttaccgttgcggccagtgcggttt"
 AB000178 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaatgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgtaacagcaccagcaggtgatacatcaaatcagatgcctcgttggtcagctcaaagcggtcatgtaccgttggtgccagtgcggttt"
@@ -302,7 +306,6 @@ testing(strs, 2, 2500)
 testing(strs, 3, 5000)
 testing(strs, 3, 7500)
 testing(strs, 4, 10000)
-'''
 
 testing(test1, 1, 2500)
 testing(test2, 2, 5000)

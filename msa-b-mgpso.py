@@ -158,7 +158,7 @@ def MSAMGPSO(seq, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
                     if f[i](pPositions[i][j], seq) < f[i](gBest[i], seq):
                         gBest[i] = copy.deepcopy(pPositions[i][j])
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
             for i in range(len(f)):
                 for j in range(n):
                     executor.submit(multiThreaded, i, j)
@@ -203,6 +203,10 @@ def testing(seqs, i, iterations):
 logging.basicConfig(filename="mgbpso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
                     level=logging.INFO,
                     format='%(message)s')
+
+test = ["FFABCD", "ABCDFF", "GGABCD", "ABCDGG"]
+print("testing")
+testing(test, 0, 5000)
 
 '''
 AB000177 = "gaccatatgattgacgcctatgtcaatctctacactacattgctggaaagcaaatcctgagagatgctacccccgccgttgctgcgggggccaacgcgttaatgccgattcttcagattatcaatcacttctccgagatccagcccctgatcctgcaacagcaccagcaggtgatacaccaaatcagatgcctcattcttcagctcaaagcggtcatttaccgttgcggccagtgcggttt"

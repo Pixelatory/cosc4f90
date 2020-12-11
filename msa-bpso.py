@@ -263,7 +263,7 @@ def testBPSOFuncWeight(seq, w1, w2):
             print("A result: " + str(matrix))
             print("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
 
-            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt, gt])
+            score = aggregatedFunction(matrix, seq, w1, w2, True, [lt])
             aligned = numOfAlignedChars(bitsToStrings(matrix, seq))
             inserted = numOfInsertedIndels(matrix, seq)
             scores.append(score)
@@ -323,12 +323,18 @@ def testBPSOFuncWeight(seq, w1, w2):
 logging.basicConfig(filename="bpso " + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")) + ".txt",
                     level=logging.INFO,
                     format='%(message)s')
-
-test = ["FFABCD", "ABCDFF", "GGABCD", "ABCDGG"]
+'''
+test = ["FFABCD", "ABCDFF", "GGABCD", "ABCDGG"]  # basic1
 print("testing")
 testBPSOFuncWeight(test, 0.6, 0.4)
 testBPSOFuncWeight(test, 0.5, 0.5)
 testBPSOFuncWeight(test, 0.3, 0.7)
+'''
+
+tests = ["CBCADCAACE", "EACABDCADB", "DABAECBDCD", "DBEACEACCD", "DDABDEEEDE", "EEAECCAAEB", "EABEBCBCCB", "BAADDACDBB"]  # med3
+testBPSOFuncWeight(tests, 0.6, 0.4)
+testBPSOFuncWeight(tests, 0.5, 0.5)
+testBPSOFuncWeight(tests, 0.3, 0.7)
 
 '''
 logging.info("test 1")
