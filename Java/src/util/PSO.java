@@ -19,7 +19,7 @@ public class PSO {
     protected int vmaxiterlimit;
     protected double term;
     protected int maxIter;
-    protected ArrayList<Comparator<Double>> ops;
+    protected ArrayList<Operator> ops;
 
     public PSO(ArrayList<String> seq,
                int n,
@@ -30,7 +30,7 @@ public class PSO {
                int vmaxiterlimit,
                double term,
                int maxIter,
-               ArrayList<Comparator<Double>> ops) {
+               ArrayList<Operator> ops) {
         this.seq = seq;
         this.n = n;
         this.w = w;

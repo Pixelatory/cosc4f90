@@ -1,3 +1,4 @@
+import util.Operator;
 import util.PSO;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ class AM extends PSO {
               int vmaxiterlimit,
               double term,
               int maxIter,
-              ArrayList<Comparator<Double>> ops) {
+              ArrayList<Operator> ops) {
         super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
     }
 }

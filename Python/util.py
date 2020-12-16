@@ -140,6 +140,8 @@ def infeasible(bitmatrix, seq, ops):
             if op(count, len(seq[i])):
                 return True
 
+    return False
+
 
 def bitsToStrings(bitmatrix, seq):
     """Converts a list of sequences into a list of strings with indels, according to the bitmatrix provided.

@@ -1,4 +1,5 @@
 import util.MGPSO;
+import util.Operator;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,7 +31,7 @@ class AMMG extends MGPSO {
                 int vmaxiterlimit,
                 double term,
                 int maxIter,
-                ArrayList<Comparator<Double>> ops) {
+                ArrayList<Operator> ops) {
         super(seq, n, w, c1, c2, c3, vmax, vmaxiterlimit, term, maxIter, ops);
     }
 

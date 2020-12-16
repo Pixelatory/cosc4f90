@@ -238,15 +238,23 @@ def testAMPSOFuncWeight(seq, w1, w2):
     """
     bestPos = []
     bestScore = 0
+    worstScore = float('inf')
+    worstPos = []
+    worstBitString = []
     sumScore = 0
     sumInserted = 0
     sumAligned = 0
     bestInserted = 0
     bestAligned = 0
+    bestInfeasiblePercent = 100
+    worstInfeasiblePercent = 0
+    worstInserted = -float('inf')
+    worstAligned = float('inf')
     bestBitString = []
     scores = []
     inserts = []
     aligns = []
+    infeasiblePercents = []
 
     # Just logging stuff here and printing to screen
     logging.info("Started " + str(datetime.datetime.now().time()))
@@ -257,7 +265,7 @@ def testAMPSOFuncWeight(seq, w1, w2):
     e = []
 
     # Multi-threading all 30 runs of the testing
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
         for i in range(30):
             e.append(
                 executor.submit(MSAAMPSO, seq, [-100, 100], 30, 0.7, 2,
@@ -268,12 +276,13 @@ def testAMPSOFuncWeight(seq, w1, w2):
             pos = result[0]
             matrix = result[1]
             numOfInfeasibleSols = result[2]
+            infeasibleSolPercent = (numOfInfeasibleSols / (30 * 5000)) * 100
 
             # Just logging and printing to screen
             logging.info("A result: " + str(pos))
-            logging.info("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
+            logging.info("Infeasible Sol: " + str(infeasibleSolPercent) + "%")
             print("A result: " + str(pos))
-            print("Infeasible Sol: " + str((numOfInfeasibleSols / (30 * 5000)) * 100) + "%")
+            print("Infeasible Sol: " + str(infeasibleSolPercent) + "%")
 
             score = aggregatedFunction(matrix, seq, w1, w2, True, [lt])
             aligned = numOfAlignedChars(bitsToStrings(matrix, seq))
@@ -281,6 +290,7 @@ def testAMPSOFuncWeight(seq, w1, w2):
             scores.append(score)
             aligns.append(aligned)
             inserts.append(inserted)
+            infeasiblePercents.append(infeasibleSolPercent)
 
             sumScore += score
             sumAligned += aligned
@@ -290,11 +300,32 @@ def testAMPSOFuncWeight(seq, w1, w2):
             print("\tScore: " + str(score))
 
             if score > bestScore:
-                bestAligned = aligned
                 bestPos = pos
                 bestScore = score
-                bestInserted = inserted
                 bestBitString = matrix
+
+            if score < worstScore:
+                worstPos = pos
+                worstScore = score
+                worstBitString = matrix
+
+            if aligned > bestAligned:
+                bestAligned = aligned
+
+            if aligned < worstAligned:
+                worstAligned = aligned
+
+            if inserted < bestInserted:
+                bestInserted = inserted
+
+            if inserted > worstInserted:
+                worstInserted = inserted
+
+            if infeasibleSolPercent < bestInfeasiblePercent:
+                bestInfeasiblePercent = infeasibleSolPercent
+
+            if infeasibleSolPercent > worstInfeasiblePercent:
+                worstInfeasiblePercent = infeasibleSolPercent
 
             logging.info("\tBest Pos: " + str(bestPos))
             logging.info("\tBest Score: " + str(bestScore))
@@ -304,6 +335,7 @@ def testAMPSOFuncWeight(seq, w1, w2):
     s = stdev(scores)
     i = stdev(inserts)
     a = stdev(aligns)
+    ip = stdev(infeasiblePercents)
 
     logging.info("Best Score: " + str(bestScore))
     logging.info("Avg Score: " + str(sumScore / 30))
@@ -315,14 +347,20 @@ def testAMPSOFuncWeight(seq, w1, w2):
     logging.info("St. Dev. Inserts: " + str(i))
     logging.info("St. Dev. Aligns: " + str(a))
     print("Best Score:", bestScore)
+    print("Worst Score:", worstScore)
     print("Avg Score:", sumScore / 30)
+    print("St. Dev. Score: " + str(s))
     print("Best Aligned:", bestAligned)
+    print("Worst Aligned:", worstAligned)
+    print("St. Dev. Aligns: " + str(a))
     print("Avg Aligned:", sumAligned / 30)
     print("Best Inserted:", bestInserted)
+    print("Worst Inserted:", worstInserted)
     print("Avg Inserted:", sumInserted / 30)
-    print("St. Dev. Score: " + str(s))
     print("St. Dev. Inserts: " + str(i))
-    print("St. Dev. Aligns: " + str(a))
+    print("Best Infeasible Percent:", str(bestInfeasiblePercent))
+    print("Worst Infeasible Percent:", str(worstInfeasiblePercent))
+    print("St. Dev. Infeasible Percents:", str(ip))
 
     for string in bitsToStrings(bestBitString, seq):
         logging.info(string)
@@ -343,7 +381,8 @@ testAMPSOFuncWeight(test, 0.5, 0.5)
 testAMPSOFuncWeight(test, 0.3, 0.7)
 '''
 
-tests = ["CBCADCAACE", "EACABDCADB", "DABAECBDCD", "DBEACEACCD", "DDABDEEEDE", "EEAECCAAEB", "EABEBCBCCB", "BAADDACDBB"]  # med3
+tests = ["CBCADCAACE", "EACABDCADB", "DABAECBDCD", "DBEACEACCD", "DDABDEEEDE", "EEAECCAAEB", "EABEBCBCCB",
+         "BAADDACDBB"]  # med3
 testAMPSOFuncWeight(tests, 0.6, 0.4)
 testAMPSOFuncWeight(tests, 0.5, 0.5)
 testAMPSOFuncWeight(tests, 0.3, 0.7)
