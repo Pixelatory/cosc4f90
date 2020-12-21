@@ -38,6 +38,6 @@ public class TestOperator {
 
         String tmp5 = "wowwwww";
         String tmp6 = new String(tmp5);
-        System.out.println(Boolean.toString(tmp5 == tmp6));
+        System.out.println(tmp5 == tmp6);
     }
 }

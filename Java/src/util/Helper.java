@@ -22,7 +22,6 @@ public class Helper {
         return (int) Math.ceil(length * 1.2);
     }
 
-    // TODO: cloning may not work completely perfect
     public static <E> ArrayList<ArrayList<E>> copyArray(ArrayList<ArrayList<E>> arr) {
         ArrayList<ArrayList<E>> tmp = new ArrayList<>();
         for (ArrayList<E> subArr : arr) {
