@@ -1,6 +1,6 @@
 package util;
 
-import com.rits.cloning.Cloner;
+import org.kamranzafar.commons.cloner.ObjectCloner;
 
 import java.util.*;
 
@@ -24,11 +24,9 @@ public class Helper {
 
     public static <E> ArrayList<ArrayList<E>> copyArray(ArrayList<ArrayList<E>> arr) {
         ArrayList<ArrayList<E>> tmp = new ArrayList<>();
+        ObjectCloner<ArrayList<E>> cloner = new ObjectCloner<>();
         for (ArrayList<E> subArr : arr) {
-            Cloner cloner = new Cloner();
-            ArrayList<E> subArrTmp = new ArrayList<>();
-            for (E e : subArr) subArrTmp.add(cloner.deepClone(e));
-            tmp.add(subArrTmp);
+            tmp.add(cloner.deepClone(subArr));
         }
         return tmp;
     }

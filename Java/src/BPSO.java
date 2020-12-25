@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BPSO extends PSO {
-    private double w1;
-    private double w2;
+    private final double w1;
+    private final double w2;
+    private int numOfInfeasibleSols = 0;
+    private ArrayList<ArrayList<Integer>> gBestPos;
 
     private double fitness(ArrayList<ArrayList<Integer>> bitmatrix) {
         return Helper.aggregatedFunction(bitmatrix, seq, w1, w2, true, ops);
@@ -40,13 +42,13 @@ public class BPSO extends PSO {
             throw new IllegalArgumentException("Maximum iterations cannot be < 1");
 
         // Initialize main data containers
-        ArrayList<ArrayList<Integer>> gBestPos = new ArrayList<>();
+        gBestPos = new ArrayList<>();
         ArrayList<ArrayList<ArrayList<Integer>>> pPositions = new ArrayList<>();
         ArrayList<ArrayList<ArrayList<Integer>>> pPersonalBests = new ArrayList<>();
         ArrayList<ArrayList<ArrayList<Double>>> pVelocities = new ArrayList<>();
         ArrayList<Double> pFitnesses = new ArrayList<>(); // so we only calculate fitness once
-        int numOfInfeasibleSols = 0;
-        double gBestFitness = 0;
+        numOfInfeasibleSols = 0;
+        double gBestFitness;
 
         // More vars just to make things more readable
         int colLength = Helper.getColLength(seq);
@@ -61,7 +63,7 @@ public class BPSO extends PSO {
             gBestPos.add(tmp);
         }
 
-        gBestFitness = fitness(gBestPos);
+        gBestFitness = fitness(gBestPos); // Initializing the global best fitness
 
         // Initializing the particles of the swarm (they will always initially be feasible)
         for (int i = 0; i < n; i++) {
@@ -101,6 +103,15 @@ public class BPSO extends PSO {
         // This is where the iterations begin
         int iter = 0; // iteration counter
         while (iter < maxIter && fitness(gBestPos) < term) {
+            System.out.println(iter);
+
+            // Checking of fitness is better than global best for updating
+            for (int i = 0; i < n; i++) {
+                if (pFitnesses.get(i) > gBestFitness) {
+                    gBestPos = Helper.copyArray(pPersonalBests.get(i));
+                    gBestFitness = pFitnesses.get(i);
+                }
+            }
 
             // Update each particle's velocity, position, and personal best
             for (int i = 0; i < n; i++) {
@@ -128,26 +139,58 @@ public class BPSO extends PSO {
 
                 double tmpFitness = fitness(pPositions.get(i));
 
-                if(tmpFitness == Double.MIN_VALUE) {
+                // solution is infeasible, so increment count
+                if (tmpFitness == Double.MIN_VALUE) {
                     numOfInfeasibleSols++;
                     continue;
                 }
 
-                if(tmpFitness > pFitnesses.get(i)) {
+                // Checking if the fitness is better than personal best for updating
+                if (tmpFitness > pFitnesses.get(i)) {
                     pFitnesses.set(i, tmpFitness);
                     pPersonalBests.set(i, Helper.copyArray(pPositions.get(i)));
                 }
             }
 
+            iter++;
+        }
+    }
+}
 
+class ThreadedRun extends Thread {
+    private Thread thread;
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 30; i++) {
+            ThreadedRun t = new ThreadedRun();
+            t.start();
         }
     }
 
-    public static void main(String[] args) {
+    @Override
+    public void run() {
+        Operator lt = (a, b) -> a < b;
+        ArrayList<Operator> ops = new ArrayList<>();
+        ops.add(lt);
+
         ArrayList<String> seqs = new ArrayList<>();
-        seqs.add("22222");
-        seqs.add("2515125");
-        BPSO b = new BPSO(seqs, 30, 1.4, 1.4, 1.4, 11, 100, 100, 100, null);
+        seqs.add("CBCADCAACE");
+        seqs.add("EACABDCADB");
+        seqs.add("DABAECBDCD");
+        seqs.add("DBEACEACCD");
+        seqs.add("DDABDEEEDE");
+        seqs.add("EEAECCAAEB");
+        seqs.add("EABEBCBCCB");
+        seqs.add("BAADDACDBB");
+
+        BPSO b = new BPSO(seqs, 30, 0.99, 2, 2, 11, 0, Double.MAX_VALUE, 5000, 0.5, 0.5, ops);
         b.start();
+    }
+
+    public void start() {
+        if (thread == null) {
+            thread = new Thread(this);
+            thread.start();
+        }
     }
 }
