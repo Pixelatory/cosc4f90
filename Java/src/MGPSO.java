@@ -1,7 +1,7 @@
-package util;
+import base.PSO;
+import util.Operator;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 
 /*
     Nicholas Aksamit

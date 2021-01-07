@@ -16,4 +16,16 @@ public class Pair<K, V> {
     public V getSecond() {
         return v;
     }
+
+    public void setFirst(K k) {
+        this.k = k;
+    }
+
+    public void setSecond(V v) {
+        this.v = v;
+    }
+
+    public Pair<V, K> swap() {
+        return new Pair<>(v, k);
+    }
 }

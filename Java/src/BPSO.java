@@ -1,6 +1,6 @@
 import util.Helper;
 import util.Operator;
-import util.PSO;
+import base.PSO;
 
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;

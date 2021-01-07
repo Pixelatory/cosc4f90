@@ -1,8 +1,9 @@
-import util.MGPSO;
+package base;
+
+import MGPSO;
 import util.Operator;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 
 /*
     Nicholas Aksamit

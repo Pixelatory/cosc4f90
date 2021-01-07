@@ -186,7 +186,7 @@ public class Helper {
 
             for (Character c : tmpMapping.keySet()) { // Now add the tmpMapping into main charList
                 if (tmpMapping.get(c) > 1) {
-                    if(charList.containsKey(c))
+                    if (charList.containsKey(c))
                         charList.put(c, charList.get(c) + tmpMapping.get(c));
                     else
                         charList.put(c, tmpMapping.get(c));
@@ -194,7 +194,7 @@ public class Helper {
             }
         }
 
-        for(Integer i : charList.values())
+        for (Integer i : charList.values())
             result += i;
 
         return result;
@@ -207,7 +207,50 @@ public class Helper {
         return 1 / (1 + Math.exp(-x));
     }
 
-    public static boolean performComparison(double a, double b, Operator op) {
-        return op.operation(a, b);
+    /**
+     * Generating a bitMatrix from the
+     * angular modulated generation function.
+     *
+     * Values are sampled randomly
+     * @param pos
+     * @param seq
+     * @param colLength
+     * @return
+     */
+    public ArrayList<ArrayList<Integer>> genBitMatrix(ArrayList<Double> pos,
+                                                      ArrayList<String> seq,
+                                                      int colLength) {
+        ArrayList<ArrayList<Integer>> bitmatrix = new ArrayList<>();
+
+        for (int i = 0; i < seq.size(); i++) {
+            bitmatrix.add(new ArrayList<>());
+            for (int j = 0; j < colLength; j++) {
+                double value = gen((i * colLength) + j, pos.get(0), pos.get(1), pos.get(2), pos.get(3));
+                if (value > 0)
+                    bitmatrix.get(i).add(1);
+                else
+                    bitmatrix.get(i).add(0);
+            }
+        }
+
+        return bitmatrix;
+    }
+
+    /**
+     * Angular Modulated Generation Function
+     *
+     * @param x
+     * @param a
+     * @param b
+     * @param c
+     * @param d
+     * @return float
+     */
+    public double gen(double x,
+                      double a,
+                      double b,
+                      double c,
+                      double d) {
+        return Math.sin(2 * Math.PI * (x - a) * b * Math.cos(2 * Math.PI * c * (x - a))) + d;
     }
 }

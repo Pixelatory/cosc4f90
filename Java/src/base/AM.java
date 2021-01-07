@@ -1,8 +1,9 @@
+package base;
+
 import util.Operator;
-import util.PSO;
+import util.Pair;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 
 /*
     Nicholas Aksamit
@@ -10,7 +11,7 @@ import java.util.Comparator;
 
     Angular Modulated PSO for the MSA problem.
  */
-class AM extends PSO {
+public class AM extends PSO {
 
     public AM(ArrayList<String> seq,
               int n,
