@@ -32,7 +32,11 @@ public class BPSO extends PSO {
         this.w2 = w2;
     }
 
-    public void start() {
+    public void run() {
+        startPSO();
+    }
+
+    public void startPSO() {
         // Begin checks for trivial errors
         if (n < 1)
             throw new IllegalArgumentException("Swarm size cannot be < 1");
@@ -103,7 +107,6 @@ public class BPSO extends PSO {
         // This is where the iterations begin
         int iter = 0; // iteration counter
         while (iter < maxIter && fitness(gBestPos) < term) {
-            System.out.println(iter);
 
             // Checking of fitness is better than global best for updating
             for (int i = 0; i < n; i++) {
@@ -155,20 +158,10 @@ public class BPSO extends PSO {
             iter++;
         }
     }
-}
 
-class ThreadedRun extends Thread {
-    private Thread thread;
+    public static void main(String[] args) throws InterruptedException {
+        ArrayList<BPSO> bs = new ArrayList<>();
 
-    public static void main(String[] args) {
-        for (int i = 0; i < 30; i++) {
-            ThreadedRun t = new ThreadedRun();
-            t.start();
-        }
-    }
-
-    @Override
-    public void run() {
         Operator lt = (a, b) -> a < b;
         ArrayList<Operator> ops = new ArrayList<>();
         ops.add(lt);
@@ -183,14 +176,24 @@ class ThreadedRun extends Thread {
         seqs.add("EABEBCBCCB");
         seqs.add("BAADDACDBB");
 
-        BPSO b = new BPSO(seqs, 30, 0.99, 2, 2, 11, 0, Double.MAX_VALUE, 5000, 0.5, 0.5, ops);
-        b.start();
-    }
+        int n = 30;
+        int maxIter = 5000;
+        double w1 = 0.5;
+        double w2 = 0.5;
 
-    public void start() {
-        if (thread == null) {
-            thread = new Thread(this);
-            thread.start();
+        for (int i = 0; i < 30; i++) {
+            BPSO b = new BPSO(seqs, n, 0.99, 2, 2, 11, 0, Double.MAX_VALUE, maxIter, w1, w2, ops);
+            b.start();
+            bs.add(b);
         }
+
+        for (int i = 0; i < 30; i++) {
+            bs.get(i).join();
+            System.out.println("Test Run:");
+            System.out.println((((double) bs.get(i).numOfInfeasibleSols / (n * maxIter)) * 100) + "% infeasible");
+            System.out.println(Helper.aggregatedFunction(bs.get(i).gBestPos, seqs, w1, w2, true, ops));
+        }
+
+
     }
 }

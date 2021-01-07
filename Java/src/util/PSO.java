@@ -9,7 +9,7 @@ import java.util.Comparator;
 
     Basic PSO Constructor
  */
-public class PSO {
+public abstract class PSO extends Thread {
     protected ArrayList<String> seq;
     protected int n;
     protected double w;
