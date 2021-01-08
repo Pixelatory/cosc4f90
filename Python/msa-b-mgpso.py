@@ -11,7 +11,7 @@ from util import numOfAlignedChars, numOfInsertedIndels, getLongestSeqDict, bits
     addToArchive, infeasible, Sigmoid, test1
 
 """
-    MGPSO for the MSA Problem (using binary representation)
+    PSOs.MGPSO for the MSA Problem (using binary representation)
     Nick Aksamit 2020
 
     Acknowledgement goes towards:

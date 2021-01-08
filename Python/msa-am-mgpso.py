@@ -14,7 +14,7 @@ from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsert
     test3, test4, test5, test6, test7, archiveGuide, addToArchive, infeasible
 
 """
-    MGPSO for the MSA Problem (using angular modulation)
+    PSOs.MGPSO for the MSA Problem (using angular modulation)
     Nick Aksamit 2020
 
     Acknowledgement goes towards:
@@ -22,7 +22,7 @@ from util import getLongestSeqDict, genBitMatrix, numOfAlignedChars, numOfInsert
 
 
 def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, maxIter, ops):
-    """The MGPSO algorithm fitted for the MSA problem using angular modulation (AM).
+    """The PSOs.MGPSO algorithm fitted for the MSA problem using angular modulation (AM).
 
         Initialization Process:
             Particle positions: each xi = TODO replace this
@@ -31,7 +31,7 @@ def MSAMGPSO(seq, genInterval, n, w, c1, c2, c3, k, vmax, vmaxiterlimit, term, m
 
             Particle velocities: each vi = 0
 
-        MGPSO (AM version):
+        PSOs.MGPSO (AM version):
             - Topology: Star (gBest)
             - PSO Type: Synchronous
             - Velocity Update: v(t+1) = w * v(t) + \

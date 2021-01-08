@@ -1,6 +1,9 @@
+package PSOs;
+
 import util.Helper;
 import util.Operator;
 import base.PSO;
+import util.Sequences;
 
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -162,19 +165,8 @@ public class BPSO extends PSO {
     public static void main(String[] args) throws InterruptedException {
         ArrayList<BPSO> bs = new ArrayList<>();
 
-        Operator lt = (a, b) -> a < b;
         ArrayList<Operator> ops = new ArrayList<>();
-        ops.add(lt);
-
-        ArrayList<String> seqs = new ArrayList<>();
-        seqs.add("CBCADCAACE");
-        seqs.add("EACABDCADB");
-        seqs.add("DABAECBDCD");
-        seqs.add("DBEACEACCD");
-        seqs.add("DDABDEEEDE");
-        seqs.add("EEAECCAAEB");
-        seqs.add("EABEBCBCCB");
-        seqs.add("BAADDACDBB");
+        ops.add(Helper.lt);
 
         int n = 30;
         int maxIter = 5000;
@@ -182,7 +174,7 @@ public class BPSO extends PSO {
         double w2 = 0.5;
 
         for (int i = 0; i < 30; i++) {
-            BPSO b = new BPSO(seqs, n, 0.99, 2, 2, 11, 0, Double.MAX_VALUE, maxIter, w1, w2, ops);
+            BPSO b = new BPSO(Sequences.seq1, n, 0.99, 2, 2, 11, 0, Double.MAX_VALUE, maxIter, w1, w2, ops);
             b.start();
             bs.add(b);
         }
@@ -191,7 +183,7 @@ public class BPSO extends PSO {
             bs.get(i).join();
             System.out.println("Test Run:");
             System.out.println((((double) bs.get(i).numOfInfeasibleSols / (n * maxIter)) * 100) + "% infeasible");
-            System.out.println(Helper.aggregatedFunction(bs.get(i).gBestPos, seqs, w1, w2, true, ops));
+            System.out.println(Helper.aggregatedFunction(bs.get(i).gBestPos, Sequences.seq1, w1, w2, true, ops));
         }
 
 

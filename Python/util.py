@@ -272,7 +272,7 @@ def gen(x, a, b, c, d):
 def dominates(seq, bm1, bm2):
     """Checking that bit matrix 1 dominates bit matrix 2.
 
-    Used in both MGPSO py code files.
+    Used in both PSOs.MGPSO py code files.
 
     :type bm1: List[List[int]]
     :type bm2: List[List[int]]

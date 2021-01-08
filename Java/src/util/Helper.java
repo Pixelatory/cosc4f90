@@ -5,12 +5,18 @@ import org.kamranzafar.commons.cloner.ObjectCloner;
 import java.util.*;
 
 public class Helper {
+
+    // Standard operators for use in algorithms
+    public static Operator lt = (a, b) -> a < b;
+    public static Operator gt = (a, b) -> a > b;
+    public static Operator eq = (a, b) -> a == b;
+
     /**
      * getColLength
      * Returns an integer 1.2 times greater than the longest sequence
      * in the given sequences.
      *
-     * @param seqs MSA Sequences
+     * @param seqs MSA util.Sequences
      * @return column length
      */
     public static int getColLength(ArrayList<String> seqs) {
@@ -210,16 +216,17 @@ public class Helper {
     /**
      * Generating a bitMatrix from the
      * angular modulated generation function.
+     * <p>
+     * Values are sampled from 0, 1, ..., n-1
      *
-     * Values are sampled randomly
      * @param pos
      * @param seq
      * @param colLength
      * @return
      */
-    public ArrayList<ArrayList<Integer>> genBitMatrix(ArrayList<Double> pos,
-                                                      ArrayList<String> seq,
-                                                      int colLength) {
+    public static ArrayList<ArrayList<Integer>> genBitMatrix(ArrayList<Double> pos,
+                                                             ArrayList<String> seq,
+                                                             int colLength) {
         ArrayList<ArrayList<Integer>> bitmatrix = new ArrayList<>();
 
         for (int i = 0; i < seq.size(); i++) {
@@ -246,11 +253,11 @@ public class Helper {
      * @param d
      * @return float
      */
-    public double gen(double x,
-                      double a,
-                      double b,
-                      double c,
-                      double d) {
+    private static double gen(double x,
+                       double a,
+                       double b,
+                       double c,
+                       double d) {
         return Math.sin(2 * Math.PI * (x - a) * b * Math.cos(2 * Math.PI * c * (x - a))) + d;
     }
 }

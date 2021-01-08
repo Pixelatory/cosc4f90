@@ -12,7 +12,7 @@ from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, te
     test7, numOfAlignedChars, numOfInsertedIndels, Sigmoid
 
 """
-    BPSO for the MSA Problem
+    PSOs.BPSO for the MSA Problem
     Nick Aksamit 2020
         
     Acknowledgement goes towards: 
@@ -20,7 +20,7 @@ from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, te
     1. Multiple Sequence Alignment Based on a Binary 
     Particle Swarm Optimization Algorithm (Hai-Xia Long, Wen-Bo Xu, Jun Sun, Wen-Juan Ji)
     
-    1. Helped me reference how the MSA problem should be represented in a BPSO format
+    1. Helped me reference how the MSA problem should be represented in a PSOs.BPSO format
     
     Note of the imported functions to reduce confusion in code:
     - deepcopy (from copy)
@@ -44,7 +44,7 @@ from util import aggregatedFunction, bitsToStrings, getLongestSeqDict, test1, te
 
 
 def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, ops):
-    """The BPSO algorithm fitted for the MSA problem.
+    """The PSOs.BPSO algorithm fitted for the MSA problem.
 
     :type seq: List[str]
     :param seq: sequences to be aligned
@@ -83,7 +83,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, op
 
         Particle velocities: each vi = 0
 
-    BPSO:
+    PSOs.BPSO:
         Topology: Star (gBest)
 
         PSO Type: Synchronous
@@ -211,7 +211,7 @@ def MSABPSO(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, op
 
 # ----TESTING AREA----#
 def testBPSOFuncWeight(seq, w1, w2):
-    """Just a testing function for the BPSO on an MSA problem  (dynamic w1 and w2 values)\n
+    """Just a testing function for the PSOs.BPSO on an MSA problem  (dynamic w1 and w2 values)\n
     n = 30\n
     w = 0.9\n
     c1 = c2 = 2\n

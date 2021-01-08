@@ -12,7 +12,7 @@ from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsT
     genBitMatrix, test1, test2, test3, test4, test5, test6, test7, infeasible
 
 """
-    AMPSO for the MSA Problem
+    PSOs.AMPSO for the MSA Problem
     Nick Aksamit 2020
 
     Acknowledgement goes towards: 
@@ -20,7 +20,7 @@ from util import aggregatedFunction, getLongestSeqDict, numOfAlignedChars, bitsT
 
 
 def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, f, w1, w2, ops):
-    """The AMPSO algorithm fitted for the MSA problem.
+    """The PSOs.AMPSO algorithm fitted for the MSA problem.
 
     Initialization Process:
         Particle positions: each xi = TODO replace this
@@ -29,7 +29,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
 
         Particle velocities: each vi = 0
 
-    AMPSO:
+    PSOs.AMPSO:
         Topology: Star (gBest)
 
         PSO Type: Synchronous
@@ -107,7 +107,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
 
     def fitness(bitmatrix):
         """
-        To test fitness in the AMPSO, first you use the position vector as the coefficients
+        To test fitness in the PSOs.AMPSO, first you use the position vector as the coefficients
         of the angular modulation formula. Then, sample random values within genInterval with
         the coefficients and use these values with the gen function. If the gen function
         returns a value > 0, the bit is 1, otherwise 0.
@@ -220,7 +220,7 @@ def MSAAMPSO(seq, genInterval, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter,
 
 
 def testAMPSOFuncWeight(seq, w1, w2):
-    """Just a testing function for the BPSO on an MSA problem  (dynamic w1 and w2 values)\n
+    """Just a testing function for the PSOs.BPSO on an MSA problem  (dynamic w1 and w2 values)\n
     n = 30\n
     w = 0.9\n
     c1 = c2 = 2\n

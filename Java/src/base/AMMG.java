@@ -1,6 +1,6 @@
 package base;
 
-import MGPSO;
+import PSOs.MGPSO;
 import util.Operator;
 
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
     Angular Modulated Multi-Guided PSO for the MSA problem.
  */
-class AMMG extends MGPSO {
+public class AMMG extends MGPSO {
     private int n;
     private int w;
     private double c1;
