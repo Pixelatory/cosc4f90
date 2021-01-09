@@ -1,6 +1,6 @@
 package util;
 
-public class Pair<K, V> {
+public class Pair<K, V> implements FixedCollection {
     private K k;
     private V v;
 

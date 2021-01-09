@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
     Angular Modulated PSO for the MSA problem.
  */
-public class AM extends PSO {
+public abstract class AM extends PSO {
 
     public AM(ArrayList<String> seq,
               int n,

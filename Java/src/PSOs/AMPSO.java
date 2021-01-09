@@ -162,7 +162,7 @@ public class AMPSO extends AM {
         ArrayList<AMPSO> ams = new ArrayList<>();
 
         ArrayList<Operator> ops = new ArrayList<>();
-        ops.add(Helper.lt);
+        ops.add(Operator.lt);
 
         int n = 30;
         int maxIter = 5000;

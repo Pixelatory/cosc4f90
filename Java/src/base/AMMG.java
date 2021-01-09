@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
     Angular Modulated Multi-Guided PSO for the MSA problem.
  */
-public class AMMG extends MGPSO {
+public abstract class AMMG extends MGPSO {
     private int n;
     private int w;
     private double c1;

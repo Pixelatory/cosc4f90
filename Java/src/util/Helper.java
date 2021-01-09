@@ -5,12 +5,6 @@ import org.kamranzafar.commons.cloner.ObjectCloner;
 import java.util.*;
 
 public class Helper {
-
-    // Standard operators for use in algorithms
-    public static Operator lt = (a, b) -> a < b;
-    public static Operator gt = (a, b) -> a > b;
-    public static Operator eq = (a, b) -> a == b;
-
     /**
      * getColLength
      * Returns an integer 1.2 times greater than the longest sequence
@@ -28,6 +22,13 @@ public class Helper {
         return (int) Math.ceil(length * 1.2);
     }
 
+    /**
+     * Makes a deep copy of a two-dimensional array.
+     *
+     * @param arr array to be copied
+     * @param <E> the type of the item within the two-dimensional arrays
+     * @return deep copy of arr
+     */
     public static <E> ArrayList<ArrayList<E>> copyArray(ArrayList<ArrayList<E>> arr) {
         ArrayList<ArrayList<E>> tmp = new ArrayList<>();
         ObjectCloner<ArrayList<E>> cloner = new ObjectCloner<>();
@@ -37,6 +38,17 @@ public class Helper {
         return tmp;
     }
 
+    /**
+     * An aggregated function.
+     *
+     * @param bitmatrix
+     * @param seq
+     * @param w1
+     * @param w2
+     * @param checkInfeasibility
+     * @param ops
+     * @return
+     */
     public static double aggregatedFunction(ArrayList<ArrayList<Integer>> bitmatrix,
                                             ArrayList<String> seq,
                                             double w1,
@@ -59,11 +71,13 @@ public class Helper {
     }
 
     /**
-     * Counts the number of indels that are found before the last character in a sequence.
+     * Counts the number of indels that are found
+     * before the last character in a sequence.
      */
     public static int numOfInsertedIndels(ArrayList<ArrayList<Integer>> bitmatrix,
                                           ArrayList<String> seq) {
-        /* Remember: bit 0 means character from sequence
+        /*
+        Remember: bit 0 means character from sequence
                      bit 1 means indel
          */
 
@@ -254,10 +268,10 @@ public class Helper {
      * @return float
      */
     private static double gen(double x,
-                       double a,
-                       double b,
-                       double c,
-                       double d) {
+                              double a,
+                              double b,
+                              double c,
+                              double d) {
         return Math.sin(2 * Math.PI * (x - a) * b * Math.cos(2 * Math.PI * c * (x - a))) + d;
     }
 }
