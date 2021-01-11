@@ -12,27 +12,27 @@ import java.util.Comparator;
     Basic PSO Constructor
  */
 public abstract class PSO extends Thread {
-    protected ArrayList<String> seq;
-    protected int n;
-    protected double w;
-    protected double c1;
-    protected double c2;
-    protected double vmax;
-    protected int vmaxiterlimit;
-    protected double term;
-    protected int maxIter;
-    protected ArrayList<Operator> ops;
+    protected final String[] seq;
+    protected final int n;
+    protected final double w;
+    protected final double c1;
+    protected final double c2;
+    protected final double vmax;
+    protected final int vmaxiterlimit;
+    protected final double[] term;
+    protected final int maxIter;
+    protected final Operator[] ops;
 
-    public PSO(ArrayList<String> seq,
+    public PSO(String[] seq,
                int n,
                double w,
                double c1,
                double c2,
                double vmax,
                int vmaxiterlimit,
-               double term,
+               double[] term,
                int maxIter,
-               ArrayList<Operator> ops) {
+               Operator[] ops) {
         this.seq = seq;
         this.n = n;
         this.w = w;

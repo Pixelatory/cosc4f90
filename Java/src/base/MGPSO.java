@@ -1,4 +1,4 @@
-package PSOs;
+package base;
 
 import base.PSO;
 import util.FitnessFunction;
@@ -14,10 +14,10 @@ import java.util.ArrayList;
     Basic Multi-Guided PSO Constructor
  */
 public abstract class MGPSO extends PSO {
-    protected double c3;
+    protected final double c3;
     protected final Pair<FitnessFunction, Operator>[] f;
 
-    public MGPSO(ArrayList<String> seq,
+    public MGPSO(String[] seq,
                  int n,
                  double w,
                  double c1,
@@ -25,10 +25,10 @@ public abstract class MGPSO extends PSO {
                  double c3,
                  double vmax,
                  int vmaxiterlimit,
-                 double term,
+                 double[] term,
                  int maxIter,
                  Pair<FitnessFunction, Operator>[] f,
-                 ArrayList<Operator> ops) {
+                 Operator[] ops) {
         super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
         this.c3 = c3;
         this.f = f;

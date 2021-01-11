@@ -13,16 +13,16 @@ import java.util.ArrayList;
  */
 public abstract class AM extends PSO {
 
-    public AM(ArrayList<String> seq,
+    public AM(String[] seq,
               int n,
               double w,
               double c1,
               double c2,
               double vmax,
               int vmaxiterlimit,
-              double term,
+              double[] term,
               int maxIter,
-              ArrayList<Operator> ops) {
+              Operator[] ops) {
         super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
     }
 }

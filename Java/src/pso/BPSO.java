@@ -1,5 +1,6 @@
-package PSOs;
+package pso;
 
+import util.ArrayCloner;
 import util.Helper;
 import util.Operator;
 import base.PSO;
@@ -12,24 +13,25 @@ public class BPSO extends PSO {
     private final double w1;
     private final double w2;
     private int numOfInfeasibleSols = 0;
-    private ArrayList<ArrayList<Integer>> gBestPos;
+    private int[][] gBestPos;
+    private double gBestFitness;
 
-    private double fitness(ArrayList<ArrayList<Integer>> bitmatrix) {
+    private double fitness(int[][] bitmatrix) {
         return Helper.aggregatedFunction(bitmatrix, seq, w1, w2, true, ops);
     }
 
-    public BPSO(ArrayList<String> seq,
+    public BPSO(String[] seq,
                 int n,
                 double w,
                 double c1,
                 double c2,
                 double vmax,
                 int vmaxiterlimit,
-                double term,
+                double[] term,
                 int maxIter,
                 double w1,
                 double w2,
-                ArrayList<Operator> ops) {
+                Operator[] ops) {
         super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
         this.w1 = w1;
         this.w2 = w2;
@@ -43,79 +45,76 @@ public class BPSO extends PSO {
         // Begin checks for trivial errors
         if (n < 1)
             throw new IllegalArgumentException("Swarm size cannot be < 1");
-        else if (seq.size() < 2)
+        else if (seq.length < 2)
             throw new IllegalArgumentException("Number of sequences < 2");
         else if (maxIter < 1)
             throw new IllegalArgumentException("Maximum iterations cannot be < 1");
+        else if (term == null || term.length == 0)
+            throw new IllegalArgumentException("Termination criteria is empty");
+        else if (term.length > 1)
+            System.err.println("Warning: termination array doesn't need to have more than 1 entry for AMPSO.");
+
+        // Vars just to make things more readable
+        int colLength = Helper.getColLength(seq);
+        int numOfSeq = seq.length;
 
         // Initialize main data containers
-        gBestPos = new ArrayList<>();
-        ArrayList<ArrayList<ArrayList<Integer>>> pPositions = new ArrayList<>();
-        ArrayList<ArrayList<ArrayList<Integer>>> pPersonalBests = new ArrayList<>();
-        ArrayList<ArrayList<ArrayList<Double>>> pVelocities = new ArrayList<>();
-        ArrayList<Double> pFitnesses = new ArrayList<>(); // so we only calculate fitness once
-        numOfInfeasibleSols = 0;
-        double gBestFitness;
+        gBestPos = new int[numOfSeq][colLength];
+        int[][][] pPositions = new int[n][numOfSeq][colLength];
+        int[][][] pPersonalBests = new int[n][numOfSeq][colLength];
+        double[][][] pVelocities = new double[n][numOfSeq][colLength];
+        double[] pFitnesses = new double[n]; // so we only calculate fitness once
 
-        // More vars just to make things more readable
-        int colLength = Helper.getColLength(seq);
-        int numOfSeq = seq.size();
+        numOfInfeasibleSols = 0;
 
         // Initializing the global best particle to all 0 integer bitmatrix
         for (int i = 0; i < numOfSeq; i++) {
-            ArrayList<Integer> tmp = new ArrayList<>();
             for (int j = 0; j < colLength; j++) {
-                tmp.add(0);
+                gBestPos[i][j] = 0;
             }
-            gBestPos.add(tmp);
         }
 
         gBestFitness = fitness(gBestPos); // Initializing the global best fitness
 
         // Initializing the particles of the swarm (they will always initially be feasible)
         for (int i = 0; i < n; i++) {
-            ArrayList<ArrayList<Integer>> position = new ArrayList<>();
-            ArrayList<ArrayList<Double>> velocity = new ArrayList<>();
+            int[][] position = new int[numOfSeq][colLength];
+            double[][] velocity = new double[numOfSeq][colLength];
 
             for (int j = 0; j < numOfSeq; j++) {
-                velocity.add(new ArrayList<>());
-                position.add(new ArrayList<>());
+                // First the velocity and position is set to all 0
                 for (int k = 0; k < colLength; k++) {
-                    velocity.get(j).add(0.0);
-                    position.get(j).add(0);
+                    velocity[j][k] = 0.0;
+                    position[j][k] = 0;
                 }
-                for (int k = 0; k < colLength - seq.get(j).length(); k++) {
+
+                // Now this transforms the position into something feasible
+                for (int k = 0; k < (colLength - seq[j].length()); k++) {
                     while (true) {
                         int randNum = ThreadLocalRandom.current().nextInt(0, colLength);
-                        if (position.get(j).get(randNum) != 1) {
-                            position.get(j).set(randNum, 1);
+                        if (position[j][randNum] != 1) {
+                            position[j][randNum] = 1;
                             break;
                         }
                     }
                 }
             }
 
-            pPositions.add(position);
-            pPersonalBests.add(position);
-            pVelocities.add(velocity);
-            double tmpParticleFitness = fitness(position);
-            pFitnesses.add(tmpParticleFitness);
-
-            if (tmpParticleFitness > gBestFitness) {
-                gBestPos = Helper.copyArray(position);
-                gBestFitness = tmpParticleFitness;
-            }
+            pPositions[i] = position;
+            pPersonalBests[i] = ArrayCloner.deepcopy(position);
+            pVelocities[i] = velocity;
+            pFitnesses[i] = fitness(position);
         }
 
         // This is where the iterations begin
         int iter = 0; // iteration counter
-        while (iter < maxIter && fitness(gBestPos) < term) {
+        while (iter < maxIter && gBestFitness < term[0]) {
 
             // Checking of fitness is better than global best for updating
             for (int i = 0; i < n; i++) {
-                if (pFitnesses.get(i) > gBestFitness) {
-                    gBestPos = Helper.copyArray(pPersonalBests.get(i));
-                    gBestFitness = pFitnesses.get(i);
+                if (pFitnesses[i] > gBestFitness) {
+                    gBestPos = ArrayCloner.deepcopy(pPersonalBests[i]);
+                    gBestFitness = pFitnesses[i];
                 }
             }
 
@@ -127,34 +126,31 @@ public class BPSO extends PSO {
 
                 for (int j = 0; j < numOfSeq; j++) {
                     for (int k = 0; k < colLength; k++) {
-                        pVelocities.get(i).get(j).set(k, w * pVelocities.get(i).get(j).get(k)
-                                + r1 * c1 * (pPersonalBests.get(i).get(j).get(k) - pPositions.get(i).get(j).get(k))
-                                + r2 * c2 * (gBestPos.get(j).get(k) - pPositions.get(i).get(j).get(k)));
+                        pVelocities[i][j][k] = w * pVelocities[i][j][k]
+                                + r1 * c1 * (pPersonalBests[i][j][k] - pPositions[i][j][k])
+                                + r2 * c2 * (gBestPos[j][k] - pPositions[i][j][k]);
 
                         if (vmaxiterlimit < iter) {
-                            if (pVelocities.get(i).get(j).get(k) > vmax)
-                                pVelocities.get(i).get(j).set(k, vmax);
-                            else if (pVelocities.get(i).get(j).get(k) < -vmax)
-                                pVelocities.get(i).get(j).set(k, -vmax);
+                            if (pVelocities[i][j][k] > vmax)
+                                pVelocities[i][j][k] = vmax;
+                            else if (pVelocities[i][j][k] < -vmax)
+                                pVelocities[i][j][k] = -vmax;
                         }
 
-                        double probability = Helper.Sigmoid(pVelocities.get(i).get(j).get(k));
-                        pPositions.get(i).get(j).set(k, ThreadLocalRandom.current().nextDouble(0, 1) < probability ? 1 : 0);
+                        double probability = Helper.Sigmoid(pVelocities[i][j][k]);
+                        pPositions[i][j][k] = ThreadLocalRandom.current().nextDouble(0, 1) < probability ? 1 : 0;
                     }
                 }
 
-                double tmpFitness = fitness(pPositions.get(i));
+                double tmpFitness = fitness(pPositions[i]);
 
                 // solution is infeasible, so increment count
-                if (tmpFitness == Double.MIN_VALUE) {
+                if (tmpFitness == Double.MIN_VALUE)
                     numOfInfeasibleSols++;
-                    continue;
-                }
-
-                // Checking if the fitness is better than personal best for updating
-                if (tmpFitness > pFitnesses.get(i)) {
-                    pFitnesses.set(i, tmpFitness);
-                    pPersonalBests.set(i, Helper.copyArray(pPositions.get(i)));
+                else if (tmpFitness > pFitnesses[i]) {
+                    // current fitness is better than personal best's so update it
+                    pFitnesses[i] = tmpFitness;
+                    pPersonalBests[i] = ArrayCloner.deepcopy(pPositions[i]);
                 }
             }
 
@@ -165,8 +161,7 @@ public class BPSO extends PSO {
     public static void main(String[] args) throws InterruptedException {
         ArrayList<BPSO> bs = new ArrayList<>();
 
-        ArrayList<Operator> ops = new ArrayList<>();
-        ops.add(Operator.lt);
+        Operator[] ops = {Operator.lt};
 
         int n = 30;
         int maxIter = 5000;
@@ -174,7 +169,7 @@ public class BPSO extends PSO {
         double w2 = 0.5;
 
         for (int i = 0; i < 30; i++) {
-            BPSO b = new BPSO(Sequences.seq1, n, 0.99, 2, 2, 11, 0, Double.MAX_VALUE, maxIter, w1, w2, ops);
+            BPSO b = new BPSO(Sequences.seq1, n, 0.99, 2, 2, 11, 0, new double[]{Double.MAX_VALUE}, maxIter, w1, w2, ops);
             b.start();
             bs.add(b);
         }

@@ -74,7 +74,7 @@ def SPSO(n,dim,w,c1,c2,bounds,term,maxIter,f):
 
 
 '''
-    The PSOs.BPSO algorithm.
+    The pso.BPSO algorithm.
 
     n -> swarm size (integer > 0)
     dim -> number of dimensions (integer > 0)
@@ -98,7 +98,7 @@ def SPSO(n,dim,w,c1,c2,bounds,term,maxIter,f):
                                 0, otherwise
                               }
 '''
-def PSOs.BPSO(n, dim, w, c1, c2, term, maxIter, f):
+def pso.BPSO(n, dim, w, c1, c2, term, maxIter, f):
     # Checking for trivial errors first
     if (n < 1):
         raise Exception("Swarm size cannot be < 1")

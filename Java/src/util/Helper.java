@@ -13,29 +13,13 @@ public class Helper {
      * @param seqs MSA util.Sequences
      * @return column length
      */
-    public static int getColLength(ArrayList<String> seqs) {
+    public static int getColLength(String[] seqs) {
         int length = 0;
         for (String seq : seqs) {
             if (seq.length() > length)
                 length = seq.length();
         }
         return (int) Math.ceil(length * 1.2);
-    }
-
-    /**
-     * Makes a deep copy of a two-dimensional array.
-     *
-     * @param arr array to be copied
-     * @param <E> the type of the item within the two-dimensional arrays
-     * @return deep copy of arr
-     */
-    public static <E> ArrayList<ArrayList<E>> copyArray(ArrayList<ArrayList<E>> arr) {
-        ArrayList<ArrayList<E>> tmp = new ArrayList<>();
-        ObjectCloner<ArrayList<E>> cloner = new ObjectCloner<>();
-        for (ArrayList<E> subArr : arr) {
-            tmp.add(cloner.deepClone(subArr));
-        }
-        return tmp;
     }
 
     /**
@@ -49,19 +33,19 @@ public class Helper {
      * @param ops
      * @return
      */
-    public static double aggregatedFunction(ArrayList<ArrayList<Integer>> bitmatrix,
-                                            ArrayList<String> seq,
+    public static double aggregatedFunction(int[][] bitmatrix,
+                                            String[] seq,
                                             double w1,
                                             double w2,
                                             boolean checkInfeasibility,
-                                            ArrayList<Operator> ops) {
+                                            Operator[] ops) {
         if (checkInfeasibility && ops == null)
             throw new IllegalArgumentException("Checking for infeasibility but ops are null!");
 
         if (checkInfeasibility && infeasible(bitmatrix, seq, ops))
             return Double.MIN_VALUE;
 
-        ArrayList<String> strings = bitsToStrings(bitmatrix, seq);
+        String[] strings = bitsToStrings(bitmatrix, seq);
 
         int nMax = maxNumOfIndels(bitmatrix, seq); // total number of indels
 
@@ -74,8 +58,8 @@ public class Helper {
      * Counts the number of indels that are found
      * before the last character in a sequence.
      */
-    public static int numOfInsertedIndels(ArrayList<ArrayList<Integer>> bitmatrix,
-                                          ArrayList<String> seq) {
+    public static int numOfInsertedIndels(int[][] bitmatrix,
+                                          String[] seq) {
         /*
         Remember: bit 0 means character from sequence
                      bit 1 means indel
@@ -83,13 +67,13 @@ public class Helper {
 
         int count = 0;
 
-        for (int i = 0; i < seq.size(); i++) { // Go through each bitstring in bitmatrix
+        for (int i = 0; i < seq.length; i++) { // Go through each bitstring in bitmatrix
             int tmp = 0;
             boolean hitLastChar = false;
-            for (int bit : bitmatrix.get(i)) { // Go through each bit in bitstring
+            for (int bit : bitmatrix[i]) { // Go through each bit in bitstring
                 if (bit == 0) { // we hit a character
                     tmp += 1;
-                    if (tmp == seq.get(i).length())
+                    if (tmp == seq[i].length())
                         hitLastChar = true;
                 } else // we hit an indel
                     count += 1;
@@ -108,11 +92,11 @@ public class Helper {
      * <p>
      * Does not consider individual bits.
      */
-    public static int maxNumOfIndels(ArrayList<ArrayList<Integer>> bitmatrix,
-                                     ArrayList<String> seq) {
+    public static int maxNumOfIndels(int[][] bitmatrix,
+                                     String[] seq) {
         int count = 0;
-        for (int i = 0; i < bitmatrix.size(); i++)
-            count += bitmatrix.get(i).size() - seq.get(i).length();
+        for (int i = 0; i < bitmatrix.length; i++)
+            count += bitmatrix[i].length - seq[i].length();
         return count;
     }
 
@@ -130,17 +114,17 @@ public class Helper {
      * Ex. Say ops is [>, <], then bitmatrix is infeasible when # of 0's > # of chars,
      * and when # of 0's < # of chars. Thus it will only be feasible when # of 0's = # of chars.
      */
-    public static boolean infeasible(ArrayList<ArrayList<Integer>> bitmatrix,
-                                     ArrayList<String> seq,
-                                     ArrayList<Operator> ops) {
-        for (int i = 0; i < seq.size(); i++) {
+    public static boolean infeasible(int[][] bitmatrix,
+                                     String[] seq,
+                                     Operator[] ops) {
+        for (int i = 0; i < seq.length; i++) {
             int count = 0;
-            for (int bit : bitmatrix.get(i))
+            for (int bit : bitmatrix[i])
                 if (bit == 0)
                     count += 1;
 
             for (Operator op : ops)
-                if (op.operation(count, seq.get(i).length()))
+                if (op.operation(count, seq[i].length()))
                     return true;
         }
 
@@ -154,22 +138,22 @@ public class Helper {
      * However, if the number of 0 bits exceeds the length of the sequence,
      * indels will be inserted instead.
      */
-    public static ArrayList<String> bitsToStrings(ArrayList<ArrayList<Integer>> bitmatrix,
-                                                  ArrayList<String> seq) {
-        ArrayList<String> result = new ArrayList<>();
+    public static String[] bitsToStrings(int[][] bitmatrix,
+                                         String[] seq) {
+        String[] result = new String[seq.length];
         int i = 0;
-        for (ArrayList<Integer> bitlist : bitmatrix) {
+        for (int[] bitlist : bitmatrix) {
             int j = 0;
             StringBuilder tmp = new StringBuilder();
             for (int bit : bitlist) {
-                if (bit == 0 && j < seq.get(i).length()) {
-                    tmp.append(seq.get(i).charAt(j));
-                    j += 1;
+                if (bit == 0 && j < seq[i].length()) {
+                    tmp.append(seq[i].charAt(j));
+                    j++;
                 } else
                     tmp.append("-");
             }
-            result.add(tmp.toString());
-            i += 1;
+            result[i] = tmp.toString();
+            i++;
         }
         return result;
     }
@@ -179,10 +163,10 @@ public class Helper {
      * <p>
      * Important: Assumes that each string is of the same length.
      */
-    public static int numOfAlignedChars(ArrayList<String> strings) {
-        if (strings.size() < 1)
+    public static int numOfAlignedChars(String[] strings) {
+        if (strings.length < 1)
             throw new IllegalArgumentException("List of strings is empty");
-        else if (strings.size() == 1) {
+        else if (strings.length == 1) {
             System.out.println("Warning: only 1 string in numOfAlignedChars function!");
             return 0;
         }
@@ -190,11 +174,14 @@ public class Helper {
         int result = 0;
         HashMap<Character, Integer> charList = new HashMap<>();
 
-        /* The charList is a mapping, of each character to
+        /*
+            The charList is a mapping, of each character to
+            the amount of matchings that character has.
          */
-        for (int i = 0; i < strings.get(0).length(); i++) {
+        for (int i = 0; i < strings[0].length(); i++) {
             HashMap<Character, Integer> tmpMapping = new HashMap<>(); // Temp before adding to main charList
-            for (String str : strings) { // Fill out the tmpMapping for all characters in column i
+            // Fill out the tmpMapping for all characters in column i
+            for (String str : strings) {
                 Character c = str.charAt(i);
                 if (c != '-') {
                     if (tmpMapping.containsKey(c))
@@ -204,7 +191,9 @@ public class Helper {
                 }
             }
 
-            for (Character c : tmpMapping.keySet()) { // Now add the tmpMapping into main charList
+            // Now add the tmpMapping into main charList
+            for (Character c : tmpMapping.keySet()) {
+                // if there's more than one of that character in the col, there's a matching
                 if (tmpMapping.get(c) > 1) {
                     if (charList.containsKey(c))
                         charList.put(c, charList.get(c) + tmpMapping.get(c));
@@ -238,19 +227,18 @@ public class Helper {
      * @param colLength
      * @return
      */
-    public static ArrayList<ArrayList<Integer>> genBitMatrix(ArrayList<Double> pos,
-                                                             ArrayList<String> seq,
-                                                             int colLength) {
-        ArrayList<ArrayList<Integer>> bitmatrix = new ArrayList<>();
+    public static int[][] genBitMatrix(double[] pos,
+                                       String[] seq,
+                                       int colLength) {
+        int[][] bitmatrix = new int[seq.length][colLength];
 
-        for (int i = 0; i < seq.size(); i++) {
-            bitmatrix.add(new ArrayList<>());
+        for (int i = 0; i < seq.length; i++) {
             for (int j = 0; j < colLength; j++) {
-                double value = gen((i * colLength) + j, pos.get(0), pos.get(1), pos.get(2), pos.get(3));
+                double value = gen((i * colLength) + j, pos[0], pos[1], pos[2], pos[3]);
                 if (value > 0)
-                    bitmatrix.get(i).add(1);
+                    bitmatrix[i][j] = 1;
                 else
-                    bitmatrix.get(i).add(0);
+                    bitmatrix[i][j] = 0;
             }
         }
 
@@ -273,5 +261,105 @@ public class Helper {
                               double c,
                               double d) {
         return Math.sin(2 * Math.PI * (x - a) * b * Math.cos(2 * Math.PI * c * (x - a))) + d;
+    }
+
+    /**
+     * Checks if one bitmatrix dominates another.
+     *
+     * @param seq
+     * @param bm1
+     * @param bm2
+     * @return
+     */
+    private static boolean dominates(String[] seq,
+                                     int[][] bm1,
+                                     int[][] bm2) {
+        String[] strings1 = Helper.bitsToStrings(bm1, seq);
+        String[] strings2 = Helper.bitsToStrings(bm2, seq);
+
+        // First check the number of aligned characters
+        int res1 = Helper.numOfAlignedChars(strings1);
+        int res2 = Helper.numOfAlignedChars(strings2);
+
+        if (res1 <= res2)
+            return false;
+
+        // The code won't reach here if bm1 already doesn't have more aligned characters than bm2
+        // Now check the number of inserted indels
+        res1 = Helper.numOfInsertedIndels(bm1, seq);
+        res2 = Helper.numOfInsertedIndels(bm2, seq);
+
+        return res1 > res2;
+    }
+
+    /**
+     * Checks that two bitmatrixes are the same.
+     *
+     * @param x
+     * @param y
+     * @return
+     */
+    private static boolean theSame(int[][] x,
+                                   int[][] y) {
+        for (int i = 0; i < x.length; i++) {
+            if (x[i].length != y[i].length)
+                return false;
+
+            for (int j = 0; j < x[i].length; j++) {
+                if (x[i][j] != y[i][j])
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Solution x is attempted to be added into the
+     * archive if it is not dominated.
+     * <p>
+     * If after addition to the archive, and previous
+     * solutions are now dominated by this new addition,
+     * then those dominated solutions are removed.
+     * <p>
+     * Also, if the archive is full then the most crowded
+     * solution is removed.
+     *
+     * @param seq
+     * @param sArchive
+     * @param x
+     * @param archiveLimit
+     * @return
+     */
+    public ArrayList<Pair<int[][], Double>> addToArchive(String[] seq,
+                                                         ArrayList<Pair<int[][], Double>> sArchive,
+                                                         int[][] x,
+                                                         int archiveLimit) {
+        ArrayList<Pair<int[][], Double>> aDominated = new ArrayList<>();
+
+        for (Pair<int[][], Double> s : sArchive) {
+            // archive entry dominates x
+            if (dominates(seq, s.getFirst(), x))
+                return sArchive;
+            else if (dominates(seq, x, s.getFirst())) // x dominates archive entry
+                aDominated.add(s);
+
+            // x and archive entry are the exact same
+            if (theSame(x, s.getFirst()))
+                return sArchive;
+        }
+
+        /*
+         When function enters here, x is not dominated by any
+         entry in the archive, but may have dominated some
+         entries. So add it to archive, but remove all the
+         previous entries that are dominated by it.
+
+         If the limit of the archive has been reached, then
+         calculate crowding distances and remove the most
+         crowded solution.
+         */
+
+        sArchive.add(new Pair<>(ArrayCloner.deepcopy(x), 0.0));
     }
 }

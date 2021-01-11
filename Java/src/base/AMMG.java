@@ -1,6 +1,5 @@
 package base;
 
-import PSOs.MGPSO;
 import util.Operator;
 
 import java.util.ArrayList;
