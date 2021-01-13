@@ -4,6 +4,7 @@ import base.PSO;
 import util.FitnessFunction;
 import util.Operator;
 import util.Pair;
+import util.Triplet;
 
 import java.util.ArrayList;
 
@@ -11,11 +12,15 @@ import java.util.ArrayList;
     Nicholas Aksamit
     2020
 
-    Basic Multi-Guided PSO Constructor
+    Basic Multi-Guided PSO Constructor.
+
+    FitnessFunction's are expected to be
+    in minimization format. If maximization,
+    then simply input -f(x).
  */
 public abstract class MGPSO extends PSO {
     protected final double c3;
-    protected final Pair<FitnessFunction, Operator>[] f;
+    protected final ArrayList<Triplet<FitnessFunction, Double, Double>> f;
 
     public MGPSO(String[] seq,
                  int n,
@@ -27,10 +32,14 @@ public abstract class MGPSO extends PSO {
                  int vmaxiterlimit,
                  double[] term,
                  int maxIter,
-                 Pair<FitnessFunction, Operator>[] f,
+                 FitnessFunction[] f,
                  Operator[] ops) {
         super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
         this.c3 = c3;
-        this.f = f;
+        this.f = new ArrayList<>();
+
+        for(FitnessFunction ff : f) {
+            this.f.add(new Triplet<>(ff, ff.calculateMax(seq), ff.calculateMin()));
+        }
     }
 }

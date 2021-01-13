@@ -14,9 +14,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class MGBPSO extends MGPSO {
     private int numOfInfeasibleSols = 0;
-    private ArrayList<ArrayList<Integer>> gBestPos;
-    private ArrayList<Pair<int[][], Double>> gBest;
-    private ArrayList<Pair<int[][], Double>> sArchive;
+    private ArrayList<Pair<int[][], Double>> gBest; // formatted as a pair of bitmatrix and its fitness
+    private int[][][] sArchive;
 
     public MGBPSO(String[] seq,
                   int n,
@@ -28,7 +27,7 @@ public class MGBPSO extends MGPSO {
                   int vmaxiterlimit,
                   double[] term,
                   int maxIter,
-                  Pair<FitnessFunction, Operator>[] f,
+                  FitnessFunction[] f,
                   Operator[] ops) {
         super(seq, n, w, c1, c2, c3, vmax, vmaxiterlimit, term, maxIter, f, ops);
     }
@@ -46,23 +45,31 @@ public class MGBPSO extends MGPSO {
         int numOfSeqs = seq.length;
 
         // Initialize main data containers
-        int[][][][] pPositions = new int[f.length][n][numOfSeqs][colLength];
-        int[][][][] pPersonalBests = new int[f.length][n][numOfSeqs][colLength];
-        double[][][][] pVelocities = new double[f.length][n][numOfSeqs][colLength];
+        int[][][][] pPositions = new int[f.size()][n][numOfSeqs][colLength];
+        int[][][][] pPersonalBests = new int[f.size()][n][numOfSeqs][colLength];
+        double[][][][] pVelocities = new double[f.size()][n][numOfSeqs][colLength];
         gBest = new ArrayList<>();
-        sArchive = new ArrayList<>();
+        sArchive = new int[n][numOfSeqs][colLength];
         double l = 0; // lambda coefficient
 
         numOfInfeasibleSols = 0;
 
         // Initialize the global best (one per swarm, or per entry in f)
-        for (int i = 0; i < f.length; i++) {
+        for (int i = 0; i < f.size(); i++) {
             int[][] tmpPos = new int[numOfSeqs][colLength];
-            gBest.add(new Pair<>(tmpPos, f[i].getFirst().calculate(tmpPos, seq)));
+
+            // gBest Position starts at all 0s
+            for (int j = 0; j < numOfSeqs; j++) {
+                for (int k = 0; k < colLength; k++) {
+                    tmpPos[i][j] = 0;
+                }
+            }
+
+            gBest.add(new Pair<>(tmpPos, f.get(i).getFirst().calculate(tmpPos, seq)));
         }
 
         // Initialize particles of each sub-swarm
-        for (int i = 0; i < f.length; i++) {
+        for (int i = 0; i < f.size(); i++) {
             // These are the containers for each sub-swarm
             int[][][] newPositions = new int[n][numOfSeqs][colLength];
             double[][][] newVelocities = new double[n][numOfSeqs][colLength];
@@ -103,21 +110,22 @@ public class MGBPSO extends MGPSO {
         int iter = 0;
         while (iter < maxIter) {
             // If global best is better than termination criteria for respective sub-swarm, then quit
-            for (int i = 0; i < f.length; i++) {
-                if (f[i].getSecond().operation(gBest.get(i).getSecond(), term[i]))
+            for (int i = 0; i < f.size(); i++) {
+                if (gBest.get(i).getSecond() < term[i])
                     return;
             }
 
             // Update global best if applicable
-            for (int i = 0; i < f.length; i++) {
+            for (int i = 0; i < f.size(); i++) {
                 for (int j = 0; j < n; j++) {
                     // if infeasible, don't try to put into global best or archive
-                    if(Helper.infeasible(pPersonalBests[i][j], seq, ops)) {
+                    if (Helper.infeasible(pPersonalBests[i][j], seq, ops)) {
                         numOfInfeasibleSols++;
                         continue;
                     }
 
-                    sArchive = Helper.addToArchive();
+                    // TODO: Check if we add personal best or position into archive
+                    sArchive = Helper.addToArchive(seq, sArchive, pPersonalBests[i][j], f.get(i));
                 }
             }
 
