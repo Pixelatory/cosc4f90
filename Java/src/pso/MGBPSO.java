@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MGBPSO extends MGPSO {
     private int numOfInfeasibleSols = 0;
     private ArrayList<Pair<int[][], Double>> gBest; // formatted as a pair of bitmatrix and its fitness
-    private int[][][] sArchive;
+    private ArrayList<Pair<int[][], Double>> sArchive;
 
     public MGBPSO(String[] seq,
                   int n,
@@ -47,9 +47,10 @@ public class MGBPSO extends MGPSO {
         // Initialize main data containers
         int[][][][] pPositions = new int[f.size()][n][numOfSeqs][colLength];
         int[][][][] pPersonalBests = new int[f.size()][n][numOfSeqs][colLength];
+        double[][] pFitnesses = new double[f.size()][n];
         double[][][][] pVelocities = new double[f.size()][n][numOfSeqs][colLength];
         gBest = new ArrayList<>();
-        sArchive = new int[n][numOfSeqs][colLength];
+        sArchive = new ArrayList<>();
         double l = 0; // lambda coefficient
 
         numOfInfeasibleSols = 0;
@@ -99,6 +100,7 @@ public class MGBPSO extends MGPSO {
 
                 newPositions[j] = tmpPos;
                 newVelocities[j] = tmpVel;
+                pFitnesses[i][j] = f.get(i).getFirst().calculate(tmpPos, seq);
             }
 
             pPositions[i] = newPositions;
@@ -119,13 +121,27 @@ public class MGBPSO extends MGPSO {
             for (int i = 0; i < f.size(); i++) {
                 for (int j = 0; j < n; j++) {
                     // if infeasible, don't try to put into global best or archive
-                    if (Helper.infeasible(pPersonalBests[i][j], seq, ops)) {
+                    if (Helper.infeasible(pPositions[i][j], seq, ops)) {
                         numOfInfeasibleSols++;
                         continue;
                     }
 
-                    // TODO: Check if we add personal best or position into archive
-                    sArchive = Helper.addToArchive(seq, sArchive, pPersonalBests[i][j], f.get(i));
+                    sArchive = Helper.addToArchive(seq, sArchive, pPositions[i][j], f);
+
+                    if (!Helper.infeasible(pPersonalBests[i][j], seq, ops)
+                            && pFitnesses[i][j] > gBest.get(i).getSecond()) {
+                        gBest.get(i).setSecond(pFitnesses[i][j]);
+                        gBest.get(i).setFirst(ArrayCloner.deepcopy(pPersonalBests[i][j]));
+                    }
+                }
+            }
+
+            for (int i = 0; i < f.size(); i++) {
+                for (int j = 0; j < n; j++) {
+                    double r1 = ThreadLocalRandom.current().nextDouble();
+                    double r2 = ThreadLocalRandom.current().nextDouble();
+                    double r3 = ThreadLocalRandom.current().nextDouble();
+
                 }
             }
 

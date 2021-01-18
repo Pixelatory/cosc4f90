@@ -1,8 +1,7 @@
 package util;
 
-import org.kamranzafar.commons.cloner.ObjectCloner;
-
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Helper {
     /**
@@ -331,25 +330,26 @@ public class Helper {
      * @param seq
      * @param sArchive
      * @param x
-     * @param archiveLimit
+     * @param n
      * @return
      */
-    public static int[][][] addToArchive(String[] seq,
-                                         int[][][] sArchive,
-                                         int[][] x,
-                                         ArrayList<Triplet<FitnessFunction, Double, Double>> f) {
+    public static void addToArchive(String[] seq,
+                                    ArrayList<int[][]> sArchive,
+                                    int[][] x,
+                                    ArrayList<Triplet<FitnessFunction, Double, Double>> f,
+                                    int n) {
         ArrayList<int[][]> aDominated = new ArrayList<>();
 
         for (int[][] s : sArchive) {
             // archive entry dominates x
             if (dominates(seq, s, x, f))
-                return sArchive;
+                return;
             else if (dominates(seq, x, s, f)) // x dominates archive entry
                 aDominated.add(s);
 
             // x and archive entry are the exact same
             if (theSame(x, s))
-                return sArchive;
+                return;
         }
 
         /*
@@ -363,40 +363,82 @@ public class Helper {
          crowded solution.
          */
 
-        int[][][] tmpArchive = new int[sArchive.length][][];
-        int i = 0;
-
-        for (int[][] s : sArchive) {
-            if (!aDominated.contains(s)) {
-                tmpArchive[i] = s;
-                i++;
-            }
-        }
+        sArchive.removeIf(aDominated::contains);
 
         /*
              If this is true then the archive is completely full so
              remove most crowded solution.
          */
-        if (i == sArchive.length - 1) {
+        if (sArchive.size() == n) {
             // Updated crowding distance: collect unique fitnesses first and perform calculations on these
-            ArrayList<Double> uniqueFitnesses = new ArrayList<>();
-            i = 0;
+            ArrayList<Double> uniqueFitnesses = getUniqueFitnesses(seq, f, sArchive);
+            double mostCrowdedFitness = getCrowdingDistances(uniqueFitnesses, f).get(0).getFirst();
+
+            /*
+                Distances arraylist will be sorted in asc. order by distance
+
+                However, we must match the fitness to an archive entry in
+                order to remove it, so this is done here, and after the
+                most crowded fitness is removed, x is added and we exit
+                this function.
+             */
             for (Triplet<FitnessFunction, Double, Double> ff : f) {
-                for (int[][] t : tmpArchive) {
-                    double fitness = ff.getFirst().calculate(t, seq);
-                    if (!uniqueFitnesses.contains(fitness))
-                        uniqueFitnesses.add(fitness);
+                for (int j = 0; j < sArchive.size(); j++) {
+                    if(ff.getFirst().calculate(sArchive.get(j), seq) == mostCrowdedFitness) {
+                        sArchive.remove(j);
+                        sArchive.add(x);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private static int[][][] replaceCrowdedSolution(String[] seq,
+                                                    ArrayList<Triplet<FitnessFunction, Double, Double>> f,
+                                                    int[][][] sArchive,
+                                                    double crowdedFitness,
+                                                    int[][] replacement) {
+        for (Triplet<FitnessFunction, Double, Double> ff : f) {
+            int i = 0; // keeping track of sArchive index
+            for (int[][] s : sArchive) {
+                if (s != null && ff.getFirst().calculate(s, seq) == crowdedFitness) {
+                    sArchive[i] = ArrayCloner.deepcopy(replacement);
+                    return sArchive;
                 }
                 i++;
             }
+        }
+    }
 
+    private static ArrayList<Double> getUniqueFitnesses(String[] seq,
+                                                        ArrayList<Triplet<FitnessFunction, Double, Double>> f,
+                                                        ArrayList<int[][]> sArchive) {
+        ArrayList<Double> uniqueFitnesses = new ArrayList<>();
 
+        for (Triplet<FitnessFunction, Double, Double> ff : f) {
+            for (int[][] s : sArchive) {
+                double fitness = ff.getFirst().calculate(s, seq);
+                if (!uniqueFitnesses.contains(fitness))
+                    uniqueFitnesses.add(fitness);
+            }
         }
 
-        // Now that the archive has space, include the new non-dominated solution.
-        tmpArchive[i] = ArrayCloner.deepcopy(x);
+        return uniqueFitnesses;
+    }
 
-        return tmpArchive;
+    public static int[][] archiveGuide(String[] seq,
+                                       ArrayList<int[][]> sArchive,
+                                       ArrayList<Triplet<FitnessFunction, Double, Double>> f,
+                                       int k) {
+        ArrayList<Pair<Double, Double>> distances = getCrowdingDistances(getUniqueFitnesses(seq, f, sArchive), f);
+
+        int index = ThreadLocalRandom.current().nextInt(0, sArchive.size());
+
+        for (int i = 0; i < k; i++) {
+            int tmp = ThreadLocalRandom.current().nextInt(0, sArchive.size());
+            // TODO: Figure out which fitness to use here
+        }
     }
 
     /**
@@ -406,13 +448,11 @@ public class Helper {
      * Uses the updated crowding distance calculation from:
      * Fortin, F.-A., & Parizeau, M. (2013). Revisiting the NSGA-II crowding-distance computation. Proceeding of the Fifteenth Annual Conference on Genetic and Evolutionary Computation Conference - GECCO  ’13. doi:10.1145/2463372.2463456
      *
-     * @param seq
-     * @param sArchive
+     * @param uniqueFitnesses
      * @param fs
      */
-    private static void updateCrowdingDistances(String[] seq,
-                                                ArrayList<Double> uniqueFitnesses,
-                                                Triplet<FitnessFunction, Double, Double>[] fs) {
+    private static ArrayList<Pair<Double, Double>> getCrowdingDistances(ArrayList<Double> uniqueFitnesses,
+                                                                        ArrayList<Triplet<FitnessFunction, Double, Double>> fs) {
         /*
             Unique fitnesses are used for distance calculations,
             but the structure must be updated to contain a pair
@@ -426,7 +466,7 @@ public class Helper {
         // Now the uniqueDistancedFitnesses structure is set up and ready to be used
 
         for (Triplet<FitnessFunction, Double, Double> f : fs) {
-            // Sort uniqueDistancedFitnesses by lowest value
+            // Sort uniqueDistancedFitnesses in ascending order
             Comparator<Pair<Double, Double>> c = (o1, o2) -> o1.getFirst() > o2.getFirst() ? 1 : 0;
             uniqueDistancedFitnesses.sort(c);
 
@@ -436,16 +476,16 @@ public class Helper {
 
             for (int i = 1; i < uniqueDistancedFitnesses.size() - 1; i++) {
                 double curr = uniqueDistancedFitnesses.get(i).getSecond();
-                double next = f.getFirst().calculate(sArchive.get(i + 1).getFirst(), seq);
-                double prev = f.getFirst().calculate(sArchive.get(i - 1).getFirst(), seq);
+                double next = uniqueDistancedFitnesses.get(i + 1).getFirst();
+                double prev = uniqueDistancedFitnesses.get(i - 1).getFirst();
                 uniqueDistancedFitnesses.get(i).setSecond(curr + ((next - prev) / (f.getSecond() - f.getThird())));
             }
         }
-    }
 
-    private static int[][][] removeCrowdedSolution(String[] seq,
-                                                   int[][][] sArchive,
-                                                   ArrayList<Triplet<FitnessFunction, Double, Double>> f) {
+        // This will sort uniqueDistancedFitnesses based on distance (ascending)
+        Comparator<Pair<Double, Double>> c = (o1, o2) -> o1.getSecond() > o2.getSecond() ? 1 : 0;
+        uniqueDistancedFitnesses.sort(c);
 
+        return uniqueDistancedFitnesses;
     }
 }
