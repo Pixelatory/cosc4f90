@@ -1,6 +1,6 @@
 package pso;
 
-import util.ArrayCloner;
+import org.kamranzafar.commons.cloner.ObjectCloner;
 import util.Helper;
 import util.Operator;
 import base.PSO;
@@ -100,8 +100,9 @@ public class BPSO extends PSO {
                 }
             }
 
+            ObjectCloner<int[][]> cloner = new ObjectCloner<>();
             pPositions[i] = position;
-            pPersonalBests[i] = ArrayCloner.deepcopy(position);
+            pPersonalBests[i] = cloner.deepClone(position);
             pVelocities[i] = velocity;
             pFitnesses[i] = fitness(position);
         }
@@ -113,7 +114,8 @@ public class BPSO extends PSO {
             // Checking of fitness is better than global best for updating
             for (int i = 0; i < n; i++) {
                 if (pFitnesses[i] > gBestFitness) {
-                    gBestPos = ArrayCloner.deepcopy(pPersonalBests[i]);
+                    ObjectCloner<int[][]> cloner = new ObjectCloner<>();
+                    gBestPos = cloner.deepClone(pPersonalBests[i]);
                     gBestFitness = pFitnesses[i];
                 }
             }
@@ -138,7 +140,7 @@ public class BPSO extends PSO {
                         }
 
                         double probability = Helper.Sigmoid(pVelocities[i][j][k]);
-                        pPositions[i][j][k] = ThreadLocalRandom.current().nextDouble(0, 1) < probability ? 1 : 0;
+                        pPositions[i][j][k] = ThreadLocalRandom.current().nextDouble() < probability ? 1 : 0;
                     }
                 }
 
@@ -149,8 +151,9 @@ public class BPSO extends PSO {
                     numOfInfeasibleSols++;
                 else if (tmpFitness > pFitnesses[i]) {
                     // current fitness is better than personal best's so update it
+                    ObjectCloner<int[][]> cloner = new ObjectCloner<>();
                     pFitnesses[i] = tmpFitness;
-                    pPersonalBests[i] = ArrayCloner.deepcopy(pPositions[i]);
+                    pPersonalBests[i] = cloner.deepClone(pPositions[i]);
                 }
             }
 

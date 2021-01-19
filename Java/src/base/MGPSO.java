@@ -20,7 +20,7 @@ import java.util.ArrayList;
  */
 public abstract class MGPSO extends PSO {
     protected final double c3;
-    protected final ArrayList<Triplet<FitnessFunction, Double, Double>> f;
+    protected final FitnessFunction[] f;
 
     public MGPSO(String[] seq,
                  int n,
@@ -36,10 +36,6 @@ public abstract class MGPSO extends PSO {
                  Operator[] ops) {
         super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
         this.c3 = c3;
-        this.f = new ArrayList<>();
-
-        for(FitnessFunction ff : f) {
-            this.f.add(new Triplet<>(ff, ff.calculateMax(seq), ff.calculateMin()));
-        }
+        this.f = f;
     }
 }

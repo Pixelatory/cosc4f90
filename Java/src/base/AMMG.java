@@ -1,5 +1,6 @@
 package base;
 
+import util.FitnessFunction;
 import util.Operator;
 
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ public abstract class AMMG extends MGPSO {
     private double term;
     private int maxIter;
 
-    public AMMG(ArrayList<String> seq,
+    public AMMG(String[] seq,
                 int n,
                 double w,
                 double c1,
@@ -29,10 +30,11 @@ public abstract class AMMG extends MGPSO {
                 double c3,
                 double vmax,
                 int vmaxiterlimit,
-                double term,
+                double[] term,
                 int maxIter,
-                ArrayList<Operator> ops) {
-        super(seq, n, w, c1, c2, c3, vmax, vmaxiterlimit, term, maxIter, ops);
+                FitnessFunction[] f,
+                Operator[] ops) {
+        super(seq, n, w, c1, c2, c3, vmax, vmaxiterlimit, term, maxIter, f, ops);
     }
 
 

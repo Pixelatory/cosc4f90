@@ -1,7 +1,7 @@
 package pso;
 
 import base.AM;
-import util.ArrayCloner;
+import org.kamranzafar.commons.cloner.ObjectCloner;
 import util.Helper;
 import util.Operator;
 import util.Sequences;
@@ -117,8 +117,9 @@ public class AMPSO extends AM {
                 if (Helper.infeasible(pBitStrings[i], seq, ops))
                     numOfInfeasibleSols++;
                 else if (pFitnesses[i] > gBestFitness) {
+                    ObjectCloner<int[][]> cloner = new ObjectCloner<>();
                     gBestPos = pPersonalBests[i].clone();
-                    gBestBitString = ArrayCloner.deepcopy(pBitStrings[i]);
+                    gBestBitString = cloner.deepClone(pBitStrings[i]);
                     gBestFitness = pFitnesses[i];
                 }
             }

@@ -1,6 +1,7 @@
 package pso;
 
 import base.MGPSO;
+import org.kamranzafar.commons.cloner.ObjectCloner;
 import util.*;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MGBPSO extends MGPSO {
     private int numOfInfeasibleSols = 0;
     private ArrayList<Pair<int[][], Double>> gBest; // formatted as a pair of bitmatrix and its fitness
-    private ArrayList<Pair<int[][], Double>> sArchive;
+    private ArrayList<int[][]> sArchive;
 
     public MGBPSO(String[] seq,
                   int n,
@@ -45,10 +46,10 @@ public class MGBPSO extends MGPSO {
         int numOfSeqs = seq.length;
 
         // Initialize main data containers
-        int[][][][] pPositions = new int[f.size()][n][numOfSeqs][colLength];
-        int[][][][] pPersonalBests = new int[f.size()][n][numOfSeqs][colLength];
-        double[][] pFitnesses = new double[f.size()][n];
-        double[][][][] pVelocities = new double[f.size()][n][numOfSeqs][colLength];
+        int[][][][] pPositions = new int[f.length][n][numOfSeqs][colLength];
+        int[][][][] pPersonalBests = new int[f.length][n][numOfSeqs][colLength];
+        double[][] pFitnesses = new double[f.length][n];
+        double[][][][] pVelocities = new double[f.length][n][numOfSeqs][colLength];
         gBest = new ArrayList<>();
         sArchive = new ArrayList<>();
         double l = 0; // lambda coefficient
@@ -56,7 +57,7 @@ public class MGBPSO extends MGPSO {
         numOfInfeasibleSols = 0;
 
         // Initialize the global best (one per swarm, or per entry in f)
-        for (int i = 0; i < f.size(); i++) {
+        for (int i = 0; i < f.length; i++) {
             int[][] tmpPos = new int[numOfSeqs][colLength];
 
             // gBest Position starts at all 0s
@@ -66,11 +67,11 @@ public class MGBPSO extends MGPSO {
                 }
             }
 
-            gBest.add(new Pair<>(tmpPos, f.get(i).getFirst().calculate(tmpPos, seq)));
+            gBest.add(new Pair<>(tmpPos, f[i].calculate(tmpPos, seq)));
         }
 
         // Initialize particles of each sub-swarm
-        for (int i = 0; i < f.size(); i++) {
+        for (int i = 0; i < f.length; i++) {
             // These are the containers for each sub-swarm
             int[][][] newPositions = new int[n][numOfSeqs][colLength];
             double[][][] newVelocities = new double[n][numOfSeqs][colLength];
@@ -100,48 +101,81 @@ public class MGBPSO extends MGPSO {
 
                 newPositions[j] = tmpPos;
                 newVelocities[j] = tmpVel;
-                pFitnesses[i][j] = f.get(i).getFirst().calculate(tmpPos, seq);
+                pFitnesses[i][j] = f[i].calculate(tmpPos, seq);
             }
 
+            ObjectCloner<int[][][]> cloner = new ObjectCloner<>();
             pPositions[i] = newPositions;
             pVelocities[i] = newVelocities;
-            pPersonalBests[i] = ArrayCloner.deepcopy(newPositions);
+            pPersonalBests[i] = cloner.deepClone(newPositions);
         }
 
         // This is where the iterations begin
         int iter = 0;
         while (iter < maxIter) {
             // If global best is better than termination criteria for respective sub-swarm, then quit
-            for (int i = 0; i < f.size(); i++) {
+            for (int i = 0; i < f.length; i++) {
                 if (gBest.get(i).getSecond() < term[i])
                     return;
             }
 
             // Update global best if applicable
-            for (int i = 0; i < f.size(); i++) {
+            for (int i = 0; i < f.length; i++) {
                 for (int j = 0; j < n; j++) {
-                    // if infeasible, don't try to put into global best or archive
+                    Helper.addToArchive(seq, sArchive, pPositions[i][j], f, n);
+
+                    // if infeasible, don't try to put into global best
                     if (Helper.infeasible(pPositions[i][j], seq, ops)) {
                         numOfInfeasibleSols++;
                         continue;
                     }
 
-                    sArchive = Helper.addToArchive(seq, sArchive, pPositions[i][j], f);
+                    double tmpScore = f[i].calculate(pPositions[i][j], seq);
 
-                    if (!Helper.infeasible(pPersonalBests[i][j], seq, ops)
-                            && pFitnesses[i][j] > gBest.get(i).getSecond()) {
-                        gBest.get(i).setSecond(pFitnesses[i][j]);
-                        gBest.get(i).setFirst(ArrayCloner.deepcopy(pPersonalBests[i][j]));
+                    if (tmpScore > gBest.get(i).getSecond()) {
+                        ObjectCloner<int[][]> cloner = new ObjectCloner<>();
+                        gBest.get(i).setSecond(tmpScore);
+                        gBest.get(i).setFirst(cloner.deepClone(pPersonalBests[i][j]));
                     }
                 }
             }
 
-            for (int i = 0; i < f.size(); i++) {
+            // Update velocity and position of particles
+            for (int i = 0; i < f.length; i++) {
                 for (int j = 0; j < n; j++) {
                     double r1 = ThreadLocalRandom.current().nextDouble();
                     double r2 = ThreadLocalRandom.current().nextDouble();
                     double r3 = ThreadLocalRandom.current().nextDouble();
+                    int[][] a = Helper.archiveGuide(seq, sArchive, f, 3);
 
+                    for (int x = 0; x < numOfSeqs; x++) {
+                        for (int y = 0; y < colLength; y++) {
+                            pVelocities[i][j][x][y] = w * pVelocities[i][j][x][y] +
+                                    r1 * c1 * (pPersonalBests[i][j][x][y] - pPositions[i][j][x][y]) +
+                                    l * r2 * c2 * (gBest.get(i).getFirst()[x][y] - pPositions[i][j][x][y]) +
+                                    (1 - l) * r3 * c3 * (a[x][y] - pPositions[i][j][x][y]);
+
+                            if (vmaxiterlimit < iter) {
+                                if (pVelocities[i][j][x][y] > vmax)
+                                    pVelocities[i][j][x][y] = vmax;
+                                else if (pVelocities[i][j][x][y] < -vmax)
+                                    pVelocities[i][j][x][y] = -vmax;
+                            }
+
+                            double probability = Helper.Sigmoid(pVelocities[i][j][x][y]);
+                            pPositions[i][j][x][y] = ThreadLocalRandom.current().nextDouble() < probability ? 1 : 0;
+                        }
+                    }
+
+                    // Position is feasible so attempt to update personal best
+                    if (!Helper.infeasible(pPositions[i][j], seq, ops)) {
+                        double tmpScore = f[i].calculate(pPositions[i][j], seq);
+                        if (tmpScore > pFitnesses[i][j]) {
+                            ObjectCloner<int[][]> cloner = new ObjectCloner<>();
+                            pFitnesses[i][j] = tmpScore;
+                            pPersonalBests[i][j] = cloner.deepClone(pPositions[i][j]);
+                        }
+                    }
                 }
             }
 
@@ -149,6 +183,22 @@ public class MGBPSO extends MGPSO {
             l += 1 / (double) maxIter;
 
             iter++;
+        }
+    }
+
+    public static void main(String[] args) {
+        FitnessFunction numOfAligned = (bitmatrix, seq) -> -Helper.numOfAlignedChars(Helper.bitsToStrings(bitmatrix, seq));
+        FitnessFunction insertedIndels = Helper::numOfInsertedIndels;
+        MGBPSO mg = new MGBPSO(Sequences.seq1, 30, 0.75, 1.15, 1.7, 1.05, Double.MAX_VALUE, Integer.MAX_VALUE, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 5000, new FitnessFunction[]{numOfAligned, insertedIndels}, new Operator[]{Operator.lt});
+        mg.startPSO();
+
+        for (Pair<int[][], Double> m : mg.gBest) {
+            System.out.print(Math.abs(numOfAligned.calculate(m.getFirst(), Sequences.seq1)));
+            System.out.print(" " + insertedIndels.calculate(m.getFirst(), Sequences.seq1));
+            System.out.println();
+            for(String s : Helper.bitsToStrings(m.getFirst(), Sequences.seq1)) {
+                System.out.println(s);
+            }
         }
     }
 }

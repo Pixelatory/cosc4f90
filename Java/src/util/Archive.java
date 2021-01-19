@@ -1,4 +1,4 @@
-package util;
+/*package util;
 
 import java.util.ArrayList;
 
@@ -20,6 +20,7 @@ public class Archive<E extends FixedCollection> {
      * @param bm2
      * @return
      */
+/*
     private static boolean dominates(ArrayList<String> seq,
                                      ArrayList<ArrayList<Integer>> bm1,
                                      ArrayList<ArrayList<Integer>> bm2) {
@@ -48,3 +49,4 @@ public class Archive<E extends FixedCollection> {
         archive.get(fIndex).add(e);
     }
 }
+*/

@@ -28,4 +28,9 @@ public class Pair<K, V> implements FixedCollection {
     public Pair<V, K> swap() {
         return new Pair<>(v, k);
     }
+
+    @Override
+    public String toString() {
+        return "Pair{" + k + ", " + v + "}";
+    }
 }
