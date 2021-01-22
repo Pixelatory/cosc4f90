@@ -21,9 +21,10 @@ import java.util.ArrayList;
 public abstract class MGPSO extends PSO {
     protected final double c3;
     protected final FitnessFunction[] f;
+    protected final int[] n;
 
     public MGPSO(String[] seq,
-                 int n,
+                 int[] n,
                  double w,
                  double c1,
                  double c2,
@@ -33,9 +34,13 @@ public abstract class MGPSO extends PSO {
                  double[] term,
                  int maxIter,
                  FitnessFunction[] f,
-                 Operator[] ops) {
-        super(seq, n, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
+                 Operator[] ops) throws Exception {
+        super(seq, 0, w, c1, c2, vmax, vmaxiterlimit, term, maxIter, ops);
+        this.n = n;
         this.c3 = c3;
         this.f = f;
+
+        if(n.length != f.length)
+            throw new Exception("Amount of swarms must match amount of functions");
     }
 }

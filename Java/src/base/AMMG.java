@@ -23,7 +23,7 @@ public abstract class AMMG extends MGPSO {
     private int maxIter;
 
     public AMMG(String[] seq,
-                int n,
+                int[] n,
                 double w,
                 double c1,
                 double c2,
@@ -33,7 +33,7 @@ public abstract class AMMG extends MGPSO {
                 double[] term,
                 int maxIter,
                 FitnessFunction[] f,
-                Operator[] ops) {
+                Operator[] ops) throws Exception {
         super(seq, n, w, c1, c2, c3, vmax, vmaxiterlimit, term, maxIter, f, ops);
     }
 
