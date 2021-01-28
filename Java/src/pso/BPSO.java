@@ -162,9 +162,26 @@ public class BPSO extends PSO {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        ArrayList<BPSO> bs = new ArrayList<>();
-
         Operator[] ops = {Operator.lt};
+
+        System.out.println("BASIC 1");
+        perform(Sequences.basic1, ops);
+
+        System.out.println("BASIC 2");
+        perform(Sequences.basic2, ops);
+
+        System.out.println("MED 2");
+        perform(Sequences.med2, ops);
+
+        System.out.println("MED 3");
+        perform(Sequences.med3, ops);
+
+        System.out.println("SPACES");
+        perform(Sequences.spaces, ops);
+    }
+
+    public static void perform(String[] seq, Operator[] ops) throws InterruptedException {
+        ArrayList<BPSO> bs = new ArrayList<>();
 
         int n = 30;
         int maxIter = 5000;
@@ -172,18 +189,105 @@ public class BPSO extends PSO {
         double w2 = 0.5;
 
         for (int i = 0; i < 30; i++) {
-            BPSO b = new BPSO(Sequences.seq1, n, 0.99, 2, 2, 11, 0, new double[]{Double.MAX_VALUE}, maxIter, w1, w2, ops);
+            BPSO b = new BPSO(seq, n, 0.99, 2, 2, 11, 0, new double[]{Double.MAX_VALUE}, maxIter, w1, w2, ops);
             b.start();
             bs.add(b);
         }
 
+        double[] resultList = new double[30];
+        double highestResult = Double.MIN_VALUE;
+        double lowestResult = Double.MAX_VALUE;
+
+        int[] infeasibleAmountsList = new int[30];
+        int highestInfeasible = Integer.MIN_VALUE;
+        int lowestInfeasible = Integer.MAX_VALUE;
+
+        int[] alignedCharsList = new int[30];
+        int highestAlignedChar = Integer.MIN_VALUE;
+        int lowestAlignedChar = Integer.MAX_VALUE;
+
+        int[] insertedIndelsList = new int[30];
+        int lowestInsertedIndels = Integer.MAX_VALUE;
+        int highestInsertedIndels = Integer.MIN_VALUE;
+
+        String[] bestString = null;
+
+        // Collection information from all of the 30 runs here
         for (int i = 0; i < 30; i++) {
             bs.get(i).join();
-            System.out.println("Test Run:");
-            System.out.println((((double) bs.get(i).numOfInfeasibleSols / (n * maxIter)) * 100) + "% infeasible");
-            System.out.println(Helper.aggregatedFunction(bs.get(i).gBestPos, Sequences.seq1, w1, w2, true, ops));
+
+            // Overall final fitness
+            double result = Helper.aggregatedFunction(bs.get(i).gBestPos, seq, w1, w2, true, ops);
+            resultList[i] = result;
+
+            if (result > highestResult) {
+                highestResult = result;
+                bestString = Helper.bitsToStrings(bs.get(i).gBestPos, seq);
+            }
+
+            if (result < lowestResult)
+                lowestResult = result;
+
+            // Overall number of infeasible solutions
+            int numOfInfeasibleSols = bs.get(i).numOfInfeasibleSols;
+            infeasibleAmountsList[i] = numOfInfeasibleSols;
+
+            if (numOfInfeasibleSols > highestInfeasible)
+                highestInfeasible = numOfInfeasibleSols;
+
+            if (numOfInfeasibleSols < lowestInfeasible)
+                lowestInfeasible = numOfInfeasibleSols;
+
+            // Final number of aligned characters
+            int numOfAlignedChars = Helper.numOfAlignedChars(Helper.bitsToStrings(bs.get(i).gBestPos, seq));
+            alignedCharsList[i] = numOfAlignedChars;
+
+            if (numOfAlignedChars > highestAlignedChar)
+                highestAlignedChar = numOfAlignedChars;
+
+            if (numOfAlignedChars < lowestAlignedChar)
+                lowestAlignedChar = numOfAlignedChars;
+
+            // Final number of inserted indels
+            int numOfInsertedIndels = Helper.numOfInsertedIndels(bs.get(i).gBestPos, seq);
+            insertedIndelsList[i] = numOfInsertedIndels;
+
+            if (numOfInsertedIndels > highestInsertedIndels)
+                highestInsertedIndels = numOfInsertedIndels;
+
+            if (numOfInsertedIndels < lowestInsertedIndels)
+                lowestInsertedIndels = numOfInsertedIndels;
         }
 
+        System.out.println("Final Results:");
+        System.out.println();
 
+        if (bestString != null) {
+            System.out.println("Best result by fitness:");
+            for (int i = 0; i < bestString.length; i++) {
+                System.out.println(bestString[i]);
+            }
+        }
+
+        printInfo("Fitness", highestResult, lowestResult, resultList);
+        printInfo("Infeasible Solutions", highestInfeasible, lowestInfeasible, infeasibleAmountsList);
+        printInfo("Alignment", highestAlignedChar, lowestAlignedChar, alignedCharsList);
+        printInfo("Inserted Indels", highestInsertedIndels, lowestInsertedIndels, insertedIndelsList);
+    }
+
+    private static void printInfo(String title, double highest, double lowest, double[] list) {
+        System.out.println("Best " + title + ": " + highest);
+        System.out.println("Worst " + title + ": " + lowest);
+        System.out.println("Average " + title + ": " + Helper.average(list));
+        System.out.println("St. Dev. " + title + ": " + Helper.stdev(list));
+        System.out.println();
+    }
+
+    private static void printInfo(String title, int highest, int lowest, int[] list) {
+        System.out.println("Highest " + title + ": " + highest);
+        System.out.println("Lowest " + title + ": " + lowest);
+        System.out.println("Average " + title + ": " + Helper.average(list));
+        System.out.println("St. Dev. " + title + ": " + Helper.stdev(list));
+        System.out.println();
     }
 }

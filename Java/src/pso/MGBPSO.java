@@ -38,10 +38,10 @@ public class MGBPSO extends MGPSO {
         for (int amount : n)
             if (amount < 1)
                 throw new IllegalArgumentException("Swarm size cannot be < 1");
-            else if (seq.length < 2)
-                throw new IllegalArgumentException("Number of sequences < 2");
-            else if (maxIter < 1)
-                throw new IllegalArgumentException("Maximum iterations cannot be < 1");
+        if (seq.length < 2)
+            throw new IllegalArgumentException("Number of sequences < 2");
+        else if (maxIter < 1)
+            throw new IllegalArgumentException("Maximum iterations cannot be < 1");
 
         int highestN = 0;
         int sumN = 0;
@@ -81,6 +81,7 @@ public class MGBPSO extends MGPSO {
                 for (int k = 0; k < numOfSeqs; k++) {
                     for (int x = 0; x < colLength; x++) {
                         tmpPos[k][x] = 0;
+                        tmpVel[k][x] = 0;
                     }
 
                     // This part ensures that all originating particles are feasible
@@ -105,8 +106,8 @@ public class MGBPSO extends MGPSO {
             pVelocities[i] = newVelocities;
             pPersonalBests[i] = cloner.deepClone(newPositions);
 
-            for(int[][] position : newPositions) {
-                if(gBest.size() < (i + 1)) {
+            for (int[][] position : newPositions) {
+                if (gBest.size() < (i + 1)) {
                     gBest.add(new Pair<>(position, f[i].calculate(position, seq)));
                 } else {
                     double tmpScore = f[i].calculate(position, seq);
@@ -197,26 +198,26 @@ public class MGBPSO extends MGPSO {
     public static void main(String[] args) throws Exception {
         FitnessFunction numOfAligned = (bitmatrix, seq) -> -Helper.numOfAlignedChars(Helper.bitsToStrings(bitmatrix, seq));
         FitnessFunction insertedIndels = Helper::numOfInsertedIndels;
-        MGBPSO mg = new MGBPSO(Sequences.seq1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, Double.MAX_VALUE, Integer.MAX_VALUE, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 5000, new FitnessFunction[]{numOfAligned, insertedIndels}, new Operator[]{Operator.lt});
+        MGBPSO mg = new MGBPSO(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, Double.MAX_VALUE, Integer.MAX_VALUE, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 5000, new FitnessFunction[]{numOfAligned, insertedIndels}, new Operator[]{Operator.lt});
         mg.startPSO();
 
         System.out.println("Global Bests:");
         for (Pair<int[][], Double> m : mg.gBest) {
-            System.out.print(Math.abs(numOfAligned.calculate(m.getFirst(), Sequences.seq1)));
-            System.out.print(" " + insertedIndels.calculate(m.getFirst(), Sequences.seq1));
+            System.out.print(Math.abs(numOfAligned.calculate(m.getFirst(), Sequences.basic1)));
+            System.out.print(" " + insertedIndels.calculate(m.getFirst(), Sequences.basic1));
             System.out.println();
-            for (String s : Helper.bitsToStrings(m.getFirst(), Sequences.seq1)) {
+            for (String s : Helper.bitsToStrings(m.getFirst(), Sequences.basic1)) {
                 System.out.println(s);
             }
         }
 
         System.out.println("ARCHIVE");
         for (Pair<int[][], Double> s : mg.sArchive) {
-            System.out.print(Math.abs(numOfAligned.calculate(s.getFirst(), Sequences.seq1)));
-            System.out.print(" " + insertedIndels.calculate(s.getFirst(), Sequences.seq1));
+            System.out.print(Math.abs(numOfAligned.calculate(s.getFirst(), Sequences.basic1)));
+            System.out.print(" " + insertedIndels.calculate(s.getFirst(), Sequences.basic1));
             System.out.println();
 
-            for (String ss : Helper.bitsToStrings(s.getFirst(), Sequences.seq1))
+            for (String ss : Helper.bitsToStrings(s.getFirst(), Sequences.basic1))
                 System.out.println(ss);
         }
     }

@@ -1,9 +1,27 @@
 package util;
 
-import java.util.ArrayList;
-
 public class Sequences {
-    public static String[] seq1 = {
+
+    public static String[] basic1 = {
+            "FFABCD",
+            "ABCDFF",
+            "GGABCD",
+            "ABCDGG"
+    };
+
+    public static String[] basic2 = {
+            "ABCDEF",
+            "AXBXXCXXXDXEXXF",
+            "ABCDEF"
+    };
+
+    public static String[] med2 = {
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "MAMBCMDEFGMHIJKLMNOMPQRMSTMUVWXYZ",
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    };
+
+    public static String[] med3 = {
             "CBCADCAACE",
             "EACABDCADB",
             "DABAECBDCD",
@@ -12,5 +30,11 @@ public class Sequences {
             "EEAECCAAEB",
             "EABEBCBCCB",
             "BAADDACDBB"
+    };
+
+    public static String[] spaces = {
+            "AXXXXXBXXXXXCXXXXXDXXXXXEXXXXXFXXXXXGXXXXXHXXXXXI",
+            "ZABCDERGHI",
+            "PABCDERGHI"
     };
 }

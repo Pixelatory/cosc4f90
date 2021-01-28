@@ -1,5 +1,7 @@
 package util;
 
+import org.kamranzafar.commons.cloner.ObjectCloner;
+
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -233,6 +235,7 @@ public class Helper {
 
         for (int i = 0; i < seq.length; i++) {
             for (int j = 0; j < colLength; j++) {
+
                 double value = gen((i * colLength) + j, pos[0], pos[1], pos[2], pos[3]);
                 if (value > 0)
                     bitmatrix[i][j] = 1;
@@ -363,7 +366,7 @@ public class Helper {
          crowded solution.
          */
 
-        sArchive.removeIf(aDominated::contains);
+        sArchive.removeAll(aDominated);
 
         /*
              If this is true then the archive is completely full so
@@ -382,7 +385,8 @@ public class Helper {
             sArchive.remove(mostCrowdedEntry);
         }
 
-        sArchive.add(new Pair<>(x, 0.0));
+        ObjectCloner<int[][]> cloner = new ObjectCloner<>();
+        sArchive.add(new Pair<>(cloner.deepClone(x), 0.0));
     }
 
     /**
@@ -448,5 +452,37 @@ public class Helper {
         sArchive.sort(c);
 
         return sArchive;
+    }
+
+    public static double average(double[] arr) {
+        double total = 0;
+        for(double d : arr)
+            total += d;
+        return total / arr.length;
+    }
+
+    public static double average(int[] arr) {
+        double total = 0;
+        for(double d : arr)
+            total += d;
+        return total / arr.length;
+    }
+
+    public static double stdev(double[] arr) {
+        double mean = average(arr);
+        double sum = 0;
+        for(double d : arr) {
+            sum += Math.pow(d - mean, 2);
+        }
+        return Math.sqrt(sum / arr.length);
+    }
+
+    public static double stdev(int[] arr) {
+        double mean = average(arr);
+        double sum = 0;
+        for(double d : arr) {
+            sum += Math.pow(d - mean, 2);
+        }
+        return Math.sqrt(sum / arr.length);
     }
 }
