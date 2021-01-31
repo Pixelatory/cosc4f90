@@ -126,7 +126,7 @@ public class AMPSO extends AM {
                             r1 * c1 * (pPersonalBests[i][j] - pPositions[i][j]) +
                             r2 * c2 * (gBestPos[j] - pPositions[i][j]);
 
-                    if (vmaxiterlimit < iter) {
+                    if (vmaxiterlimit > iter) {
                         if (pVelocities[i][j] > vmax)
                             pVelocities[i][j] = vmax;
                         else if (pVelocities[i][j] < -vmax)
@@ -264,25 +264,9 @@ public class AMPSO extends AM {
             }
         }
 
-        printInfo("Fitness", highestResult, lowestResult, resultList);
-        printInfo("Infeasible Solutions", highestInfeasible, lowestInfeasible, infeasibleAmountsList);
-        printInfo("Alignment", highestAlignedChar, lowestAlignedChar, alignedCharsList);
-        printInfo("Inserted Indels", highestInsertedIndels, lowestInsertedIndels, insertedIndelsList);
-    }
-
-    private static void printInfo(String title, double highest, double lowest, double[] list) {
-        System.out.println("Best " + title + ": " + highest);
-        System.out.println("Worst " + title + ": " + lowest);
-        System.out.println("Average " + title + ": " + Helper.average(list));
-        System.out.println("St. Dev. " + title + ": " + Helper.stdev(list));
-        System.out.println();
-    }
-
-    private static void printInfo(String title, int highest, int lowest, int[] list) {
-        System.out.println("Highest " + title + ": " + highest);
-        System.out.println("Lowest " + title + ": " + lowest);
-        System.out.println("Average " + title + ": " + Helper.average(list));
-        System.out.println("St. Dev. " + title + ": " + Helper.stdev(list));
-        System.out.println();
+        Helper.printInfo("Fitness", highestResult, lowestResult, resultList);
+        Helper.printInfo("Infeasible Solutions", highestInfeasible, lowestInfeasible, infeasibleAmountsList);
+        Helper.printInfo("Alignment", highestAlignedChar, lowestAlignedChar, alignedCharsList);
+        Helper.printInfo("Inserted Indels", highestInsertedIndels, lowestInsertedIndels, insertedIndelsList);
     }
 }

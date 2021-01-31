@@ -33,6 +33,10 @@ public class MGBPSO extends MGPSO {
         super(seq, n, w, c1, c2, c3, vmax, vmaxiterlimit, term, maxIter, f, ops);
     }
 
+    public void run() {
+        startPSO();
+    }
+
     public void startPSO() {
         // Begin checks for trivial errors
         for (int amount : n)
@@ -106,17 +110,8 @@ public class MGBPSO extends MGPSO {
             pVelocities[i] = newVelocities;
             pPersonalBests[i] = cloner.deepClone(newPositions);
 
-            for (int[][] position : newPositions) {
-                if (gBest.size() < (i + 1)) {
-                    gBest.add(new Pair<>(position, f[i].calculate(position, seq)));
-                } else {
-                    double tmpScore = f[i].calculate(position, seq);
-                    if (tmpScore > gBest.get(i).getSecond()) {
-                        ObjectCloner<int[][]> cloner2 = new ObjectCloner<>();
-                        gBest.set(i, new Pair<>(cloner2.deepClone(position), tmpScore));
-                    }
-                }
-            }
+            // Just set the global best here, but it'll be changed at the beginning of iterations anyways
+            gBest.add(new Pair<>(newPositions[0], pFitnesses[i][0]));
         }
 
         // This is where the iterations begin
@@ -128,22 +123,16 @@ public class MGBPSO extends MGPSO {
                     return;
             }
 
-            // Update global best if applicable
+            // Update global best and archive if applicable
             for (int i = 0; i < f.length; i++) {
                 for (int j = 0; j < n[i]; j++) {
-                    Helper.addToArchive(seq, sArchive, pPositions[i][j], f, sumN);
+                    Helper.addToArchiveB(seq, sArchive, pPersonalBests[i][j], f, sumN);
 
                     // if infeasible, don't try to put into global best
-                    if (Helper.infeasible(pPositions[i][j], seq, ops)) {
-                        numOfInfeasibleSols++;
-                        continue;
-                    }
-
-                    double tmpScore = f[i].calculate(pPositions[i][j], seq);
-
-                    if (tmpScore > gBest.get(i).getSecond()) {
+                    if (!Helper.infeasible(pPersonalBests[i][j], seq, ops)
+                            && pFitnesses[i][j] < gBest.get(i).getSecond()) {
                         ObjectCloner<int[][]> cloner = new ObjectCloner<>();
-                        gBest.get(i).setSecond(tmpScore);
+                        gBest.get(i).setSecond(pFitnesses[i][j]);
                         gBest.get(i).setFirst(cloner.deepClone(pPersonalBests[i][j]));
                     }
                 }
@@ -155,7 +144,7 @@ public class MGBPSO extends MGPSO {
                     double r1 = ThreadLocalRandom.current().nextDouble();
                     double r2 = ThreadLocalRandom.current().nextDouble();
                     double r3 = ThreadLocalRandom.current().nextDouble();
-                    int[][] a = Helper.archiveGuide(seq, sArchive, f, 3);
+                    int[][] a = Helper.archiveGuideB(seq, sArchive, f, 3);
 
                     for (int x = 0; x < numOfSeqs; x++) {
                         for (int y = 0; y < colLength; y++) {
@@ -164,7 +153,7 @@ public class MGBPSO extends MGPSO {
                                     l * r2 * c2 * (gBest.get(i).getFirst()[x][y] - pPositions[i][j][x][y]) +
                                     (1 - l) * r3 * c3 * (a[x][y] - pPositions[i][j][x][y]);
 
-                            if (vmaxiterlimit < iter) {
+                            if (vmaxiterlimit > iter) {
                                 if (pVelocities[i][j][x][y] > vmax)
                                     pVelocities[i][j][x][y] = vmax;
                                 else if (pVelocities[i][j][x][y] < -vmax)
@@ -179,12 +168,13 @@ public class MGBPSO extends MGPSO {
                     // Position is feasible so attempt to update personal best
                     if (!Helper.infeasible(pPositions[i][j], seq, ops)) {
                         double tmpScore = f[i].calculate(pPositions[i][j], seq);
-                        if (tmpScore > pFitnesses[i][j]) {
+                        if (tmpScore < pFitnesses[i][j]) {
                             ObjectCloner<int[][]> cloner = new ObjectCloner<>();
                             pFitnesses[i][j] = tmpScore;
                             pPersonalBests[i][j] = cloner.deepClone(pPositions[i][j]);
                         }
-                    }
+                    } else
+                        numOfInfeasibleSols++;
                 }
             }
 
@@ -196,29 +186,128 @@ public class MGBPSO extends MGPSO {
     }
 
     public static void main(String[] args) throws Exception {
-        FitnessFunction numOfAligned = (bitmatrix, seq) -> -Helper.numOfAlignedChars(Helper.bitsToStrings(bitmatrix, seq));
+        Operator[] ops = {Operator.lt, Operator.gt};
+
+        perform(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+    }
+
+    public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {
+        ArrayList<MGBPSO> mgbpsos = new ArrayList<>();
+        FitnessFunction numOfAligned = (bitmatrix, tmpSeq) -> -Helper.numOfAlignedChars(Helper.bitsToStrings(bitmatrix, tmpSeq));
         FitnessFunction insertedIndels = Helper::numOfInsertedIndels;
-        MGBPSO mg = new MGBPSO(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, Double.MAX_VALUE, Integer.MAX_VALUE, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 5000, new FitnessFunction[]{numOfAligned, insertedIndels}, new Operator[]{Operator.lt});
-        mg.startPSO();
+        FitnessFunction[] f = {numOfAligned, insertedIndels};
+
+        for (int i = 0; i < 30; i++) {
+            MGBPSO bpso = new MGBPSO(seq, n, w, c1, c2, c3, Double.MAX_VALUE, 0, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 5000, f, ops);
+            bpso.start();
+            mgbpsos.add(bpso);
+        }
+
+        double[][] gBestResultsList = new double[2][30];
+        double[] highestResult = {Double.MIN_VALUE, Double.MIN_VALUE};
+        double[] lowestResult = {Double.MAX_VALUE, Double.MAX_VALUE};
+
+        int[] infeasibleAmountsList = new int[30];
+        int highestInfeasible = Integer.MIN_VALUE;
+        int lowestInfeasible = Integer.MAX_VALUE;
+
+        int[][] alignedCharsList = new int[2][30];
+        int[] highestAlignedChars = {Integer.MIN_VALUE, Integer.MIN_VALUE};
+        int[] lowestAlignedChars = {Integer.MAX_VALUE, Integer.MAX_VALUE};
+
+        int[][] insertedIndelsList = new int[2][30];
+        int[] highestInsertedIndels = {Integer.MIN_VALUE, Integer.MIN_VALUE};
+        int[] lowestInsertedIndels = {Integer.MAX_VALUE, Integer.MAX_VALUE};
+
+        String[][] bestResultStrings = new String[2][];
+
+        // TODO: Find out what do to with archive
+
+        for (int i = 0; i < 30; i++) {
+            MGBPSO b = mgbpsos.get(i);
+            b.join();
+
+            double result1 = f[0].calculate(b.gBest.get(0).getFirst(), seq);
+            double result2 = f[1].calculate(b.gBest.get(1).getFirst(), seq);
+            gBestResultsList[0][i] = result1;
+            gBestResultsList[1][i] = result2;
+
+            if (result1 > highestResult[0])
+                highestResult[0] = result1;
+
+            if (result2 > highestResult[1])
+                highestResult[1] = result2;
+
+            if (result1 < lowestResult[0]) {
+                bestResultStrings[0] = Helper.bitsToStrings(b.gBest.get(0).getFirst(), seq);
+                lowestResult[0] = result1;
+            }
+
+            if (result2 < lowestResult[1]) {
+                bestResultStrings[1] = Helper.bitsToStrings(b.gBest.get(1).getFirst(), seq);
+                lowestResult[1] = result2;
+            }
+
+            int numOfInfeasibleSols = b.numOfInfeasibleSols;
+            infeasibleAmountsList[i] = numOfInfeasibleSols;
+
+            if (numOfInfeasibleSols > highestInfeasible)
+                highestInfeasible = numOfInfeasibleSols;
+
+            if (numOfInfeasibleSols < lowestInfeasible)
+                lowestInfeasible = numOfInfeasibleSols;
+
+            int numOfAlignedChars1 = Helper.numOfAlignedChars(Helper.bitsToStrings(b.gBest.get(0).getFirst(), seq));
+            int numOfAlignedChars2 = Helper.numOfAlignedChars(Helper.bitsToStrings(b.gBest.get(1).getFirst(), seq));
+            alignedCharsList[0][i] = numOfAlignedChars1;
+            alignedCharsList[1][i] = numOfAlignedChars2;
+
+            if (numOfAlignedChars1 > highestAlignedChars[0])
+                highestAlignedChars[0] = numOfAlignedChars1;
+
+            if (numOfAlignedChars2 > highestAlignedChars[1])
+                highestAlignedChars[1] = numOfAlignedChars2;
+
+            if (numOfAlignedChars1 < lowestAlignedChars[0])
+                lowestAlignedChars[0] = numOfAlignedChars1;
+
+            if (numOfAlignedChars2 < lowestAlignedChars[1])
+                lowestAlignedChars[1] = numOfAlignedChars2;
+
+            int numOfInsertedIndels1 = Helper.numOfInsertedIndels(b.gBest.get(0).getFirst(), seq);
+            int numOfInsertedIndels2 = Helper.numOfInsertedIndels(b.gBest.get(1).getFirst(), seq);
+            insertedIndelsList[0][i] = numOfInsertedIndels1;
+            insertedIndelsList[1][i] = numOfInsertedIndels2;
+
+            if (numOfInsertedIndels1 > highestInsertedIndels[0])
+                highestInsertedIndels[0] = numOfInsertedIndels1;
+
+            if (numOfInsertedIndels2 > highestInsertedIndels[1])
+                highestInsertedIndels[1] = numOfInsertedIndels2;
+
+            if (numOfInsertedIndels1 < lowestInsertedIndels[0])
+                lowestInsertedIndels[0] = numOfInsertedIndels1;
+
+            if (numOfInsertedIndels2 < lowestInsertedIndels[1])
+                lowestInsertedIndels[1] = numOfInsertedIndels2;
+        }
+
+        System.out.println("Final Results:");
 
         System.out.println("Global Bests:");
-        for (Pair<int[][], Double> m : mg.gBest) {
-            System.out.print(Math.abs(numOfAligned.calculate(m.getFirst(), Sequences.basic1)));
-            System.out.print(" " + insertedIndels.calculate(m.getFirst(), Sequences.basic1));
-            System.out.println();
-            for (String s : Helper.bitsToStrings(m.getFirst(), Sequences.basic1)) {
+
+        for (int i = 0; i < bestResultStrings.length; i++) {
+            System.out.println("[" + i + "]");
+            for (String s : bestResultStrings[i]) {
                 System.out.println(s);
             }
         }
 
-        System.out.println("ARCHIVE");
-        for (Pair<int[][], Double> s : mg.sArchive) {
-            System.out.print(Math.abs(numOfAligned.calculate(s.getFirst(), Sequences.basic1)));
-            System.out.print(" " + insertedIndels.calculate(s.getFirst(), Sequences.basic1));
-            System.out.println();
+        System.out.println();
 
-            for (String ss : Helper.bitsToStrings(s.getFirst(), Sequences.basic1))
-                System.out.println(ss);
-        }
+        Helper.printInfo("Fitness", highestResult, lowestResult, gBestResultsList);
+        Helper.printInfo("Infeasible Solutions", highestInfeasible, lowestInfeasible, infeasibleAmountsList);
+        Helper.printInfo("Alignment", highestAlignedChars, lowestAlignedChars, alignedCharsList);
+        Helper.printInfo("Inserted Indels", highestInsertedIndels, lowestInsertedIndels, insertedIndelsList);
     }
 }

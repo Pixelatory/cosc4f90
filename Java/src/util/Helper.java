@@ -288,8 +288,9 @@ public class Helper {
             double res1 = ff.calculate(bm1, seq);
             double res2 = ff.calculate(bm2, seq);
 
-            if (res1 < res2)
-                betterInAtLeastOne = true;
+            if (res1 <= res2)
+                if(res1 < res2)
+                    betterInAtLeastOne = true;
             else
                 return false;
         }
@@ -333,14 +334,14 @@ public class Helper {
      * @param seq
      * @param sArchive
      * @param x
-     * @param n
+     * @param f
      * @return
      */
-    public static void addToArchive(String[] seq,
-                                    ArrayList<Pair<int[][], Double>> sArchive,
-                                    int[][] x,
-                                    FitnessFunction[] f,
-                                    int limit) {
+    public static void addToArchiveB(String[] seq,
+                                     ArrayList<Pair<int[][], Double>> sArchive,
+                                     int[][] x,
+                                     FitnessFunction[] f,
+                                     int limit) {
         ArrayList<Pair<int[][], Double>> aDominated = new ArrayList<>();
 
         for (Pair<int[][], Double> s : sArchive) {
@@ -377,8 +378,8 @@ public class Helper {
 
             Pair<int[][], Double> mostCrowdedEntry = sArchive.get(0);
 
-            for(Pair<int[][], Double> entry : sArchive) {
-                if(entry.getSecond() < mostCrowdedEntry.getSecond())
+            for (Pair<int[][], Double> entry : sArchive) {
+                if (entry.getSecond() < mostCrowdedEntry.getSecond())
                     mostCrowdedEntry = entry;
             }
 
@@ -387,6 +388,51 @@ public class Helper {
 
         ObjectCloner<int[][]> cloner = new ObjectCloner<>();
         sArchive.add(new Pair<>(cloner.deepClone(x), 0.0));
+    }
+
+    public static void addToArchiveA(String[] seq,
+                                     ArrayList<Triplet<double[], int[][], Double>> sArchive,
+                                     Pair<double[], int[][]> x,
+                                     FitnessFunction[] f,
+                                     int limit) {
+        // First convert our sArchive to a Pair so we can use the other addToArchive function
+        ArrayList<Pair<int[][], Double>> tmpBArchive = new ArrayList<>();
+
+        for (Triplet<double[], int[][], Double> entry : sArchive) {
+            tmpBArchive.add(new Pair<>(entry.getSecond(), entry.getThird()));
+        }
+
+        addToArchiveB(seq, tmpBArchive, x.getSecond(), f, limit);
+
+        /*
+         Now that we updated the tmpArchive from binary form,
+         we must go through all the results and since two bitmatrixes
+         can't be the same in the archive, we just re-combine to obtain
+         the new archive.
+         */
+        Iterator<Triplet<double[], int[][], Double>> iter = sArchive.iterator();
+
+        while (iter.hasNext()) {
+            Triplet<double[], int[][], Double> val = iter.next();
+
+            boolean inTmp = false;
+            for (Pair<int[][], Double> tmpEntry : tmpBArchive) {
+                if (theSame(tmpEntry.getFirst(), val.getSecond()))
+                    inTmp = true;
+            }
+
+            if (!inTmp)
+                iter.remove();
+        }
+
+        for (Pair<int[][], Double> tmpEntry : tmpBArchive) {
+            if (theSame(x.getSecond(), tmpEntry.getFirst())) {
+                ObjectCloner<double[]> cloner = new ObjectCloner<>();
+                ObjectCloner<int[][]> cloner2 = new ObjectCloner<>();
+                sArchive.add(new Triplet<>(cloner.deepClone(x.getFirst()), cloner2.deepClone(x.getSecond()), 0.0));
+                return;
+            }
+        }
     }
 
     /**
@@ -398,10 +444,10 @@ public class Helper {
      * @param k        number of elements for tournament selection
      * @return archive value as guide
      */
-    public static int[][] archiveGuide(String[] seq,
-                                       ArrayList<Pair<int[][], Double>> sArchive,
-                                       FitnessFunction[] f,
-                                       int k) {
+    public static int[][] archiveGuideB(String[] seq,
+                                        ArrayList<Pair<int[][], Double>> sArchive,
+                                        FitnessFunction[] f,
+                                        int k) {
 
         calculateCrowdingDistances(seq, sArchive, f);
 
@@ -409,11 +455,32 @@ public class Helper {
 
         for (int i = 0; i < k; i++) {
             int tmp = ThreadLocalRandom.current().nextInt(0, sArchive.size());
-            if(sArchive.get(index).getSecond() > sArchive.get(tmp).getSecond())
+            if (sArchive.get(index).getSecond() > sArchive.get(tmp).getSecond())
                 index = tmp;
         }
 
         return sArchive.get(index).getFirst();
+    }
+
+    public static double[] archiveGuideA(String[] seq,
+                                         ArrayList<Triplet<double[], int[][], Double>> sArchive,
+                                         FitnessFunction[] f,
+                                         int k) throws Exception {
+
+        // First convert into binary sArchive
+        ArrayList<Pair<int[][], Double>> tmpArchive = new ArrayList<>();
+        for (Triplet<double[], int[][], Double> sEntry : sArchive) {
+            tmpArchive.add(new Pair<>(sEntry.getSecond(), sEntry.getThird()));
+        }
+
+        int[][] bitmatrix = archiveGuideB(seq, tmpArchive, f, k);
+
+        for (Triplet<double[], int[][], Double> sEntry : sArchive) {
+            if (theSame(sEntry.getSecond(), bitmatrix))
+                return sEntry.getFirst();
+        }
+
+        throw new Exception("Archive should never be empty");
     }
 
     /**
@@ -421,14 +488,13 @@ public class Helper {
      * entry removal.
      * <p>
      * Uses the updated crowding distance calculation from:
-     * Fortin, F.-A., & Parizeau, M. (2013). Revisiting the NSGA-II crowding-distance computation. Proceeding of the Fifteenth Annual Conference on Genetic and Evolutionary Computation Conference - GECCO  ’13. doi:10.1145/2463372.2463456
      *
      * @param uniqueFitnesses
      * @param f
      */
     private static ArrayList<Pair<int[][], Double>> calculateCrowdingDistances(String[] seq,
-                                                                        ArrayList<Pair<int[][], Double>> sArchive,
-                                                                        FitnessFunction[] f) {
+                                                                               ArrayList<Pair<int[][], Double>> sArchive,
+                                                                               FitnessFunction[] f) {
 
         for (FitnessFunction ff : f) {
             // Sort sArchive in ascending order
@@ -456,14 +522,14 @@ public class Helper {
 
     public static double average(double[] arr) {
         double total = 0;
-        for(double d : arr)
+        for (double d : arr)
             total += d;
         return total / arr.length;
     }
 
     public static double average(int[] arr) {
         double total = 0;
-        for(double d : arr)
+        for (double d : arr)
             total += d;
         return total / arr.length;
     }
@@ -471,7 +537,7 @@ public class Helper {
     public static double stdev(double[] arr) {
         double mean = average(arr);
         double sum = 0;
-        for(double d : arr) {
+        for (double d : arr) {
             sum += Math.pow(d - mean, 2);
         }
         return Math.sqrt(sum / arr.length);
@@ -480,9 +546,45 @@ public class Helper {
     public static double stdev(int[] arr) {
         double mean = average(arr);
         double sum = 0;
-        for(double d : arr) {
+        for (double d : arr) {
             sum += Math.pow(d - mean, 2);
         }
         return Math.sqrt(sum / arr.length);
+    }
+
+    public static void printInfo(String title, double highest, double lowest, double[] list) {
+        System.out.println("Best " + title + ": " + highest);
+        System.out.println("Worst " + title + ": " + lowest);
+        System.out.println("Average " + title + ": " + Helper.average(list));
+        System.out.println("St. Dev. " + title + ": " + Helper.stdev(list));
+        System.out.println();
+    }
+
+    public static void printInfo(String title, int highest, int lowest, int[] list) {
+        System.out.println("Highest " + title + ": " + highest);
+        System.out.println("Lowest " + title + ": " + lowest);
+        System.out.println("Average " + title + ": " + Helper.average(list));
+        System.out.println("St. Dev. " + title + ": " + Helper.stdev(list));
+        System.out.println();
+    }
+
+    public static void printInfo(String title, double[] highest, double[] lowest, double[][] list) {
+        for (int i = 0; i < highest.length; i++) {
+            System.out.println("Highest " + title + "["+ i + "]: " + highest[i]);
+            System.out.println("Lowest " + title + "["+ i + "]: " + lowest[i]);
+            System.out.println("Average " + title + "["+ i + "]: " + Helper.average(list[i]));
+            System.out.println("St. Dev. " + title + "["+ i + "]: " + Helper.stdev(list[i]));
+            System.out.println();
+        }
+    }
+
+    public static void printInfo(String title, int[] highest, int[] lowest, int[][] list) {
+        for (int i = 0; i < highest.length; i++) {
+            System.out.println("Highest " + title + "["+ i + "]: " + highest[i]);
+            System.out.println("Lowest " + title + "["+ i + "]: " + lowest[i]);
+            System.out.println("Average " + title + "["+ i + "]: " + Helper.average(list[i]));
+            System.out.println("St. Dev. " + title + "["+ i + "]: " + Helper.stdev(list[i]));
+            System.out.println();
+        }
     }
 }
