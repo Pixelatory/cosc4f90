@@ -58,11 +58,11 @@ public class MGAMPSO extends MGPSO {
         int numOfSeqs = seq.length;
 
         // Initialize main data containers
-        double[][][] pPositions = new double[f.length][][];
-        double[][][] pPersonalBests = new double[f.length][][];
+        double[][][] pPositions = new double[f.length][highestN][4];
+        double[][][] pPersonalBests = new double[f.length][highestN][4];
         double[][] pFitnesses = new double[f.length][highestN];
-        int[][][][] pBitStrings = new int[f.length][][][];
-        double[][][] pVelocities = new double[f.length][][];
+        int[][][][] pBitStrings = new int[f.length][highestN][numOfSeqs][colLength];
+        double[][][] pVelocities = new double[f.length][highestN][4];
         gBest = new ArrayList<>();
         sArchive = new ArrayList<>();
         double l = 0; // lambda coefficient
@@ -71,9 +71,6 @@ public class MGAMPSO extends MGPSO {
 
         // Initialize particles of each sub-swarm
         for (int i = 0; i < f.length; i++) {
-            double[][] newPositions = new double[n[i]][4];
-            double[][] newVelocities = new double[n[i]][4];
-            int[][][] newBitStrings = new int[n[i]][numOfSeqs][colLength];
 
             for (int j = 0; j < n[i]; j++) {
                 double[] tmpPos = new double[4];
@@ -95,22 +92,19 @@ public class MGAMPSO extends MGPSO {
 
                     bitstring = Helper.genBitMatrix(tmpPos, seq, colLength);
                 } while (Helper.infeasible(bitstring, seq, ops)
-                        && tmpPos[1] * tmpPos[2] == 0);
+                        || tmpPos[1] * tmpPos[2] == 0);
 
-                newPositions[j] = tmpPos;
-                newVelocities[j] = tmpVel;
-                newBitStrings[j] = bitstring;
+                pPositions[i][j] = tmpPos;
+                pVelocities[i][j] = tmpVel;
+                pBitStrings[i][j] = bitstring;
                 pFitnesses[i][j] = f[i].calculate(bitstring, seq);
             }
 
             ObjectCloner<double[][]> cloner = new ObjectCloner<>();
-            pPositions[i] = newPositions;
-            pVelocities[i] = newVelocities;
-            pBitStrings[i] = newBitStrings;
-            pPersonalBests[i] = cloner.deepClone(newPositions);
+            pPersonalBests[i] = cloner.deepClone(pPositions[i]);
 
-            // Just set the global best here, but it'll be changed at the beginning of iterations anyways
-            gBest.add(new Triplet<>(newPositions[0], newBitStrings[0], pFitnesses[i][0]));
+            // Just set the global best to placeholder here, but it'll be changed at the beginning of iterations anyways
+            gBest.add(new Triplet<>(null, null, Double.MAX_VALUE));
         }
 
         int iter = 0;
@@ -174,6 +168,7 @@ public class MGAMPSO extends MGPSO {
                         if (tmpScore < pFitnesses[i][j]) {
                             ObjectCloner<double[]> cloner = new ObjectCloner<>();
                             pPersonalBests[i][j] = cloner.deepClone(pPositions[i][j]);
+                            pBitStrings[i][j] = bitstring;
                             pFitnesses[i][j] = tmpScore;
                         }
                     }
@@ -189,7 +184,20 @@ public class MGAMPSO extends MGPSO {
     public static void main(String[] args) throws Exception {
         Operator[] ops = {Operator.lt, Operator.gt};
 
+        System.out.println("BASIC 1");
         perform(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+
+        System.out.println("BASIC 2");
+        perform(Sequences.basic2, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+
+        System.out.println("MED 2");
+        perform(Sequences.med2, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+
+        System.out.println("MED 3");
+        perform(Sequences.med3, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+
+        System.out.println("SPACES");
+        perform(Sequences.spaces, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
     }
 
     public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {

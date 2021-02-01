@@ -1,9 +1,6 @@
 package base;
 
 import util.Operator;
-import util.Pair;
-
-import java.util.ArrayList;
 
 /*
     Nicholas Aksamit

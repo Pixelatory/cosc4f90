@@ -406,9 +406,8 @@ public class Helper {
 
         /*
          Now that we updated the tmpArchive from binary form,
-         we must go through all the results and since two bitmatrixes
-         can't be the same in the archive, we just re-combine to obtain
-         the new archive.
+         we must go through all the results and recombine to
+         make the new archive again.
          */
         Iterator<Triplet<double[], int[][], Double>> iter = sArchive.iterator();
 
@@ -417,7 +416,7 @@ public class Helper {
 
             boolean inTmp = false;
             for (Pair<int[][], Double> tmpEntry : tmpBArchive) {
-                if (theSame(tmpEntry.getFirst(), val.getSecond()))
+                if (tmpEntry.getFirst() == val.getSecond())
                     inTmp = true;
             }
 
