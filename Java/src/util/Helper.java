@@ -289,10 +289,10 @@ public class Helper {
             double res2 = ff.calculate(bm2, seq);
 
             if (res1 <= res2)
-                if(res1 < res2)
+                if (res1 < res2)
                     betterInAtLeastOne = true;
-            else
-                return false;
+                else
+                    return false;
         }
 
         return betterInAtLeastOne;
@@ -374,7 +374,7 @@ public class Helper {
              remove most crowded solution.
          */
         if (sArchive.size() == limit) {
-            calculateCrowdingDistances(seq, sArchive, f);
+            calculateCrowdingDistancesB(seq, sArchive, f);
 
             Pair<int[][], Double> mostCrowdedEntry = sArchive.get(0);
 
@@ -395,43 +395,53 @@ public class Helper {
                                      Pair<double[], int[][]> x,
                                      FitnessFunction[] f,
                                      int limit) {
-        // First convert our sArchive to a Pair so we can use the other addToArchive function
-        ArrayList<Pair<int[][], Double>> tmpBArchive = new ArrayList<>();
+        ArrayList<Triplet<double[], int[][], Double>> aDominated = new ArrayList<>();
 
-        for (Triplet<double[], int[][], Double> entry : sArchive) {
-            tmpBArchive.add(new Pair<>(entry.getSecond(), entry.getThird()));
+        for (Triplet<double[], int[][], Double> s : sArchive) {
+            // archive entry dominates x
+            if (dominates(seq, s.getSecond(), x.getSecond(), f))
+                return;
+            else if (dominates(seq, x.getSecond(), s.getSecond(), f)) // x dominates archive entry
+                aDominated.add(s);
+
+            // x and archive entry are the exact same
+            if (theSame(x.getSecond(), s.getSecond()))
+                return;
         }
-
-        addToArchiveB(seq, tmpBArchive, x.getSecond(), f, limit);
 
         /*
-         Now that we updated the tmpArchive from binary form,
-         we must go through all the results and recombine to
-         make the new archive again.
+         When function enters here, x is not dominated by any
+         entry in the archive, but may have dominated some
+         entries. So add it to archive, but remove all the
+         previous entries that are dominated by it.
+
+         If the limit of the archive has been reached, then
+         calculate crowding distances and remove the most
+         crowded solution.
          */
-        Iterator<Triplet<double[], int[][], Double>> iter = sArchive.iterator();
 
-        while (iter.hasNext()) {
-            Triplet<double[], int[][], Double> val = iter.next();
+        sArchive.removeAll(aDominated);
 
-            boolean inTmp = false;
-            for (Pair<int[][], Double> tmpEntry : tmpBArchive) {
-                if (tmpEntry.getFirst() == val.getSecond())
-                    inTmp = true;
+        /*
+             If this is true then the archive is completely full so
+             remove most crowded solution.
+         */
+        if (sArchive.size() == limit) {
+            calculateCrowdingDistancesA(seq, sArchive, f);
+
+            Triplet<double[], int[][], Double> mostCrowdedEntry = sArchive.get(0);
+
+            for (Triplet<double[], int[][], Double> entry : sArchive) {
+                if (entry.getThird() < mostCrowdedEntry.getThird())
+                    mostCrowdedEntry = entry;
             }
 
-            if (!inTmp)
-                iter.remove();
+            sArchive.remove(mostCrowdedEntry);
         }
 
-        for (Pair<int[][], Double> tmpEntry : tmpBArchive) {
-            if (theSame(x.getSecond(), tmpEntry.getFirst())) {
-                ObjectCloner<double[]> cloner = new ObjectCloner<>();
-                ObjectCloner<int[][]> cloner2 = new ObjectCloner<>();
-                sArchive.add(new Triplet<>(cloner.deepClone(x.getFirst()), cloner2.deepClone(x.getSecond()), 0.0));
-                return;
-            }
-        }
+        ObjectCloner<int[][]> cloner = new ObjectCloner<>();
+        ObjectCloner<double[]> cloner2 = new ObjectCloner<>();
+        sArchive.add(new Triplet<>(cloner2.deepClone(x.getFirst()), cloner.deepClone(x.getSecond()), 0.0));
     }
 
     /**
@@ -448,7 +458,7 @@ public class Helper {
                                         FitnessFunction[] f,
                                         int k) {
 
-        calculateCrowdingDistances(seq, sArchive, f);
+        calculateCrowdingDistancesB(seq, sArchive, f);
 
         int index = ThreadLocalRandom.current().nextInt(0, sArchive.size());
 
@@ -466,20 +476,20 @@ public class Helper {
                                          FitnessFunction[] f,
                                          int k) throws Exception {
 
-        // First convert into binary sArchive
-        ArrayList<Pair<int[][], Double>> tmpArchive = new ArrayList<>();
-        for (Triplet<double[], int[][], Double> sEntry : sArchive) {
-            tmpArchive.add(new Pair<>(sEntry.getSecond(), sEntry.getThird()));
+        if(sArchive.size() == 0)
+            return null;
+
+        calculateCrowdingDistancesA(seq, sArchive, f);
+
+        int index = ThreadLocalRandom.current().nextInt(0, sArchive.size());
+
+        for (int i = 0; i < k; i++) {
+            int tmp = ThreadLocalRandom.current().nextInt(0, sArchive.size());
+            if (sArchive.get(index).getThird() > sArchive.get(tmp).getThird())
+                index = tmp;
         }
 
-        int[][] bitmatrix = archiveGuideB(seq, tmpArchive, f, k);
-
-        for (Triplet<double[], int[][], Double> sEntry : sArchive) {
-            if (theSame(sEntry.getSecond(), bitmatrix))
-                return sEntry.getFirst();
-        }
-
-        throw new Exception("Archive should never be empty");
+        return sArchive.get(index).getFirst();
     }
 
     /**
@@ -491,9 +501,9 @@ public class Helper {
      * @param uniqueFitnesses
      * @param f
      */
-    private static ArrayList<Pair<int[][], Double>> calculateCrowdingDistances(String[] seq,
-                                                                               ArrayList<Pair<int[][], Double>> sArchive,
-                                                                               FitnessFunction[] f) {
+    private static ArrayList<Pair<int[][], Double>> calculateCrowdingDistancesB(String[] seq,
+                                                                                ArrayList<Pair<int[][], Double>> sArchive,
+                                                                                FitnessFunction[] f) {
 
         for (FitnessFunction ff : f) {
             // Sort sArchive in ascending order
@@ -514,6 +524,34 @@ public class Helper {
 
         // This will sort uniqueDistancedFitnesses based on distance (ascending)
         Comparator<Pair<int[][], Double>> c = (o1, o2) -> o1.getSecond() > o2.getSecond() ? 1 : 0;
+        sArchive.sort(c);
+
+        return sArchive;
+    }
+
+    private static ArrayList<Triplet<double[], int[][], Double>> calculateCrowdingDistancesA(String[] seq,
+                                                                                             ArrayList<Triplet<double[], int[][], Double>> sArchive,
+                                                                                             FitnessFunction[] f) {
+
+        for (FitnessFunction ff : f) {
+            // Sort sArchive in ascending order
+            Comparator<Triplet<double[], int[][], Double>> c = (o1, o2) -> ff.calculate(o1.getSecond(), seq) > ff.calculate(o2.getSecond(), seq) ? 1 : 0;
+            sArchive.sort(c);
+
+            // Set the boundary distances to infinite (max value)
+            sArchive.get(0).setThird(Double.MAX_VALUE);
+            sArchive.get(sArchive.size() - 1).setThird(Double.MAX_VALUE);
+
+            for (int i = 1; i < sArchive.size() - 1; i++) {
+                double curr = sArchive.get(i).getThird();
+                double next = ff.calculate(sArchive.get(i + 1).getSecond(), seq);
+                double prev = ff.calculate(sArchive.get(i - 1).getSecond(), seq);
+                sArchive.get(i).setThird(curr + next - prev);
+            }
+        }
+
+        // This will sort uniqueDistancedFitnesses based on distance (ascending)
+        Comparator<Triplet<double[], int[][], Double>> c = (o1, o2) -> o1.getThird() > o2.getThird() ? 1 : 0;
         sArchive.sort(c);
 
         return sArchive;
@@ -569,20 +607,20 @@ public class Helper {
 
     public static void printInfo(String title, double[] highest, double[] lowest, double[][] list) {
         for (int i = 0; i < highest.length; i++) {
-            System.out.println("Highest " + title + "["+ i + "]: " + highest[i]);
-            System.out.println("Lowest " + title + "["+ i + "]: " + lowest[i]);
-            System.out.println("Average " + title + "["+ i + "]: " + Helper.average(list[i]));
-            System.out.println("St. Dev. " + title + "["+ i + "]: " + Helper.stdev(list[i]));
+            System.out.println("Highest " + title + "[" + i + "]: " + highest[i]);
+            System.out.println("Lowest " + title + "[" + i + "]: " + lowest[i]);
+            System.out.println("Average " + title + "[" + i + "]: " + Helper.average(list[i]));
+            System.out.println("St. Dev. " + title + "[" + i + "]: " + Helper.stdev(list[i]));
             System.out.println();
         }
     }
 
     public static void printInfo(String title, int[] highest, int[] lowest, int[][] list) {
         for (int i = 0; i < highest.length; i++) {
-            System.out.println("Highest " + title + "["+ i + "]: " + highest[i]);
-            System.out.println("Lowest " + title + "["+ i + "]: " + lowest[i]);
-            System.out.println("Average " + title + "["+ i + "]: " + Helper.average(list[i]));
-            System.out.println("St. Dev. " + title + "["+ i + "]: " + Helper.stdev(list[i]));
+            System.out.println("Highest " + title + "[" + i + "]: " + highest[i]);
+            System.out.println("Lowest " + title + "[" + i + "]: " + lowest[i]);
+            System.out.println("Average " + title + "[" + i + "]: " + Helper.average(list[i]));
+            System.out.println("St. Dev. " + title + "[" + i + "]: " + Helper.stdev(list[i]));
             System.out.println();
         }
     }

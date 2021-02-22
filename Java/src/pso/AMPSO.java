@@ -67,34 +67,31 @@ public class AMPSO extends AM {
         int[][][] pBitStrings = new int[n][numOfSeqs][colLength];
         double[] pFitnesses = new double[n]; // so we only calculate fitness once
 
-        numOfInfeasibleSols = 0;
+        // Initialize cloners
+        ObjectCloner<double[]> positionCloner = new ObjectCloner<>();
+        ObjectCloner<int[][]> bitmatrixCloner = new ObjectCloner<>();
 
-        // TODO: Look at papers at how to initialize positions
+        numOfInfeasibleSols = 0;
 
         // Initializing the particles of swarm
         for (int i = 0; i < n; i++) {
             int[][] bitstring;
-            double[] tmpPos = new double[4];
-            double[] tmpVel = new double[4];
-
-            tmpVel[0] = 0;
-            tmpVel[1] = 0;
-            tmpVel[2] = 0;
-            tmpVel[3] = 0;
+            pVelocities[i][0] = 0;
+            pVelocities[i][1] = 0;
+            pVelocities[i][2] = 0;
+            pVelocities[i][3] = 0;
 
             do {
-                tmpPos[0] = ThreadLocalRandom.current().nextDouble(-0.3, 0.3);
-                tmpPos[1] = ThreadLocalRandom.current().nextDouble(0.5, 10);
-                tmpPos[2] = ThreadLocalRandom.current().nextDouble(0.5, 10);
-                tmpPos[3] = ThreadLocalRandom.current().nextDouble(-0.9, -0.5);
+                pPositions[i][0] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
+                pPositions[i][1] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
+                pPositions[i][2] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
+                pPositions[i][3] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
 
-                bitstring = Helper.genBitMatrix(tmpPos, seq, colLength);
-            } while (Helper.infeasible(bitstring, seq, ops));
+                bitstring = Helper.genBitMatrix(pPositions[i], seq, colLength);
+            } while (Helper.infeasible(bitstring, seq, ops)
+                    || pPositions[i][1] * pPositions[i][2] == 0);
 
-            ObjectCloner<double[]> cloner = new ObjectCloner<>();
-            pPositions[i] = tmpPos;
-            pPersonalBests[i] = cloner.deepClone(tmpPos);
-            pVelocities[i] = tmpVel;
+            pPersonalBests[i] = positionCloner.deepClone(pPositions[i]);
             pBitStrings[i] = bitstring;
             pFitnesses[i] = fitness(bitstring);
         }
@@ -102,15 +99,15 @@ public class AMPSO extends AM {
         // This is where the iterations begin
         int iter = 0;
         while (iter < maxIter && gBestFitness < term[0]) {
-            // Update global best if possible
+
+            // Updating global best if possible
             for (int i = 0; i < n; i++) {
-                if (Helper.infeasible(pBitStrings[i], seq, ops) || (pPositions[i][1] * pPositions[i][2]) == 0)
+                if (Helper.infeasible(pBitStrings[i], seq, ops)
+                        || pPositions[i][1] * pPositions[i][2] == 0)
                     numOfInfeasibleSols++;
-                else if (pFitnesses[i] > gBestFitness) {
-                    ObjectCloner<int[][]> cloner = new ObjectCloner<>();
-                    ObjectCloner<double[]> cloner2 = new ObjectCloner<>();
-                    gBestPos = cloner2.deepClone(pPersonalBests[i]);
-                    gBestBitString = cloner.deepClone(pBitStrings[i]);
+                else if (pFitnesses[i] > gBestFitness){
+                    gBestPos = positionCloner.deepClone(pPersonalBests[i]);
+                    gBestBitString = bitmatrixCloner.deepClone(pBitStrings[i]);
                     gBestFitness = pFitnesses[i];
                 }
             }
@@ -140,13 +137,13 @@ public class AMPSO extends AM {
                 // Create bitstring from updated position
                 int[][] bitstring = Helper.genBitMatrix(pPositions[i], seq, colLength);
 
-                if (!Helper.infeasible(bitstring, seq, ops) && (pPositions[i][1] * pPositions[i][2]) != 0) {
+                if (!Helper.infeasible(bitstring, seq, ops)
+                        && pPositions[i][1] * pPositions[i][2] != 0) {
                     double tmpScore = fitness(bitstring);
 
                     // Update personal best if possible
                     if (tmpScore > pFitnesses[i]) {
-                        ObjectCloner<double[]> cloner = new ObjectCloner<>();
-                        pPersonalBests[i] = cloner.deepClone(pPositions[i]);
+                        pPersonalBests[i] = positionCloner.deepClone(pPositions[i]);
                         pBitStrings[i] = bitstring;
                         pFitnesses[i] = tmpScore;
                     }
@@ -157,7 +154,6 @@ public class AMPSO extends AM {
     }
 
     public static void main(String[] args) throws InterruptedException {
-
         Operator[] ops = {Operator.lt};
 
         System.out.println("BASIC 1");
