@@ -164,20 +164,17 @@ public class BPSO extends PSO {
     public static void main(String[] args) throws InterruptedException {
         Operator[] ops = {Operator.lt};
 
-        System.out.println("BASIC 1");
-        perform(Sequences.basic1, ops);
+        System.out.println("1bbt_ac");
+        perform(Sequences._1bbt_ac, ops);
 
-        System.out.println("BASIC 2");
-        perform(Sequences.basic2, ops);
+        System.out.println("labo_A");
+        perform(Sequences.labo_A, ops);
 
-        System.out.println("MED 2");
-        perform(Sequences.med2, ops);
+        System.out.println("CSPF_ECOLI");
+        perform(Sequences.CSPF_ECOLI, ops);
 
-        System.out.println("MED 3");
-        perform(Sequences.med3, ops);
-
-        System.out.println("SPACES");
-        perform(Sequences.spaces, ops);
+        System.out.println("SODM_CANAL");
+        perform(Sequences.SODM_CANAL, ops);
     }
 
     public static void perform(String[] seq, Operator[] ops) throws InterruptedException {
