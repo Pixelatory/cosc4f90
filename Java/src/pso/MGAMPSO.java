@@ -55,11 +55,14 @@ public class MGAMPSO extends MGPSO {
         }
 
         int colLength = Helper.getColLength(seq);
+        int numOfSeqs = seq.length;
 
         // Initialize main data containers
         double[][][] pPositions = new double[f.length][highestN][4];
         double[][][] pPersonalBests = new double[f.length][highestN][4];
         double[][][] pVelocities = new double[f.length][highestN][4];
+        double[][] pFitnesses = new double[f.length][highestN];
+        int[][][][] pBitStrings = new int[f.length][highestN][numOfSeqs][colLength];
         gBest = new ArrayList<>();
         sArchive = new ArrayList<>();
         double l = 0; // lambda coefficient
@@ -84,29 +87,23 @@ public class MGAMPSO extends MGPSO {
                 int[][] bitstring;
 
                 do {
-                    // Initialize position to random double in (-1000, 1000) for all positions
-                    pPositions[i][j][0] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
-                    pPositions[i][j][1] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
-                    pPositions[i][j][2] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
-                    pPositions[i][j][3] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
+                    // Initialize position to random double in (-1, 1) for all positions
+                    pPositions[i][j][0] = ThreadLocalRandom.current().nextDouble(-1, 1);
+                    pPositions[i][j][1] = ThreadLocalRandom.current().nextDouble(-1, 1);
+                    pPositions[i][j][2] = ThreadLocalRandom.current().nextDouble(-1, 1);
+                    pPositions[i][j][3] = ThreadLocalRandom.current().nextDouble(-1, 1);
 
                     bitstring = Helper.genBitMatrix(pPositions[i][j], seq, colLength);
                 } while (Helper.infeasible(bitstring, seq, ops)
                         || pPositions[i][j][1] * pPositions[i][j][2] == 0);
 
                 pPersonalBests[i][j] = positionCloner.deepClone(pPositions[i][j]);
-
-                // If j == 0 then this gBest for i has no entry, add the first position
-                if (j == 0)
-                    gBest.add(new Triplet<>(positionCloner.deepClone(pPositions[i][j]),
-                            bitmatrixCloner.deepClone(bitstring),
-                            f[i].calculate(bitstring, seq)));
-                else if (f[i].calculate(bitstring, seq) < gBest.get(i).getThird()) { // Here the gBest needs to be updated
-                    gBest.get(i).setFirst(positionCloner.deepClone(pPositions[i][j]));
-                    gBest.get(i).setSecond(bitmatrixCloner.deepClone(bitstring));
-                    gBest.get(i).setThird(f[i].calculate(bitstring, seq));
-                }
+                pBitStrings[i][j] = bitstring;
+                pFitnesses[i][j] = f[i].calculate(bitstring, seq);
             }
+            gBest.add(new Triplet<>(positionCloner.deepClone(pPositions[i][0]),
+                    bitmatrixCloner.deepClone(pBitStrings[i][0]),
+                    pFitnesses[i][0]));
         }
 
         int iter = 0;
@@ -120,28 +117,18 @@ public class MGAMPSO extends MGPSO {
             // Update personal best, global best and archive if applicable
             for (int i = 0; i < f.length; i++) {
                 for (int j = 0; j < n[i]; j++) {
-                    int[][] pBitString = Helper.genBitMatrix(pPositions[i][j], seq, colLength);
-                    int[][] pBestBitString = Helper.genBitMatrix(pPersonalBests[i][j], seq, colLength);
-                    double pBitStringf = f[i].calculate(pBitString, seq);
-                    double pBestBitStringf = f[i].calculate(pBestBitString, seq);
-
-                    if (Helper.infeasible(pBitString, seq, ops)
+                    if (Helper.infeasible(pBitStrings[i][j], seq, ops)
                             || (pPositions[i][j][1] * pPositions[i][j][2]) == 0)
                         numOfInfeasibleSols++;
                     else {
-                        // Update personal best if possible
-                        if (pBitStringf < pBestBitStringf) {
-                            pPersonalBests[i][j] = positionCloner.deepClone(pPositions[i][j]);
-                        }
-
                         // Add to archive if possible
-                        Helper.addToArchiveA(seq, sArchive, new Pair<>(pPositions[i][j], pBitString), f, sumN);
+                        Helper.addToArchiveA(seq, sArchive, new Pair<>(pPositions[i][j], pBitStrings[i][j]), f, sumN);
 
                         // Update global best if possible
-                        if (pBestBitStringf < gBest.get(i).getThird()) {
+                        if (pFitnesses[i][j] < gBest.get(i).getThird()) {
                             gBest.get(i).setFirst(positionCloner.deepClone(pPersonalBests[i][j]));
-                            gBest.get(i).setSecond(bitmatrixCloner.deepClone(pBestBitString));
-                            gBest.get(i).setThird(pBestBitStringf);
+                            gBest.get(i).setSecond(bitmatrixCloner.deepClone(pBitStrings[i][j]));
+                            gBest.get(i).setThird(pFitnesses[i][j]);
                         }
                     }
                 }
@@ -156,7 +143,6 @@ public class MGAMPSO extends MGPSO {
                     double[] a = Helper.archiveGuideA(seq, sArchive, f, 3);
 
                     for (int x = 0; x < 4; x++) {
-                        assert a != null;
                         pVelocities[i][j][x] = w * pVelocities[i][j][x] +
                                 r1 * c1 * (pPersonalBests[i][j][x] - pPositions[i][j][x]) +
                                 l * r2 * c2 * (gBest.get(i).getFirst()[x] - pPositions[i][j][x]) +
@@ -170,6 +156,14 @@ public class MGAMPSO extends MGPSO {
                         }
 
                         pPositions[i][j][x] += pVelocities[i][j][x];
+                    }
+
+                    int[][] bitmatrix = Helper.genBitMatrix(pPositions[i][j], seq, colLength);
+                    double fitness = f[i].calculate(bitmatrix, seq);
+                    if (fitness < pFitnesses[i][j]) {
+                        pBitStrings[i][j] = bitmatrixCloner.deepClone(bitmatrix);
+                        pPersonalBests[i][j] = positionCloner.deepClone(pPositions[i][j]);
+                        pFitnesses[i][j] = fitness;
                     }
                 }
             }
@@ -185,7 +179,7 @@ public class MGAMPSO extends MGPSO {
         System.out.println("BASIC 1");
         perform(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
 
-        System.out.println("BASIC 2");
+        /*System.out.println("BASIC 2");
         perform(Sequences.basic2, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
 
         System.out.println("MED 2");
@@ -195,7 +189,7 @@ public class MGAMPSO extends MGPSO {
         perform(Sequences.med3, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
 
         System.out.println("SPACES");
-        perform(Sequences.spaces, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+        perform(Sequences.spaces, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);*/
     }
 
     public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {

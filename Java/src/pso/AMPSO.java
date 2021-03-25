@@ -54,8 +54,6 @@ public class AMPSO extends AM {
         else if (term.length > 1)
             System.err.println("Warning: termination array doesn't need to have more than 1 entry for AMPSO.");
 
-        // Note: genInterval will always be in sorted where first is less than second (view AM.java)
-
         //  Vars just to make things more readable
         int colLength = Helper.getColLength(seq);
         int numOfSeqs = seq.length;
@@ -82,10 +80,10 @@ public class AMPSO extends AM {
             pVelocities[i][3] = 0;
 
             do {
-                pPositions[i][0] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
-                pPositions[i][1] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
-                pPositions[i][2] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
-                pPositions[i][3] = ThreadLocalRandom.current().nextDouble(-1000, 1000);
+                pPositions[i][0] = ThreadLocalRandom.current().nextDouble(-1, 1);
+                pPositions[i][1] = ThreadLocalRandom.current().nextDouble(-1, 1);
+                pPositions[i][2] = ThreadLocalRandom.current().nextDouble(-1, 1);
+                pPositions[i][3] = ThreadLocalRandom.current().nextDouble(-1, 1);
 
                 bitstring = Helper.genBitMatrix(pPositions[i], seq, colLength);
             } while (Helper.infeasible(bitstring, seq, ops)
@@ -102,10 +100,7 @@ public class AMPSO extends AM {
 
             // Updating global best if possible
             for (int i = 0; i < n; i++) {
-                if (Helper.infeasible(pBitStrings[i], seq, ops)
-                        || pPositions[i][1] * pPositions[i][2] == 0)
-                    numOfInfeasibleSols++;
-                else if (pFitnesses[i] > gBestFitness){
+                if (pFitnesses[i] > gBestFitness){
                     gBestPos = positionCloner.deepClone(pPersonalBests[i]);
                     gBestBitString = bitmatrixCloner.deepClone(pBitStrings[i]);
                     gBestFitness = pFitnesses[i];
@@ -136,17 +131,15 @@ public class AMPSO extends AM {
 
                 // Create bitstring from updated position
                 int[][] bitstring = Helper.genBitMatrix(pPositions[i], seq, colLength);
+                double tmpScore = fitness(bitstring);
 
-                if (!Helper.infeasible(bitstring, seq, ops)
-                        && pPositions[i][1] * pPositions[i][2] != 0) {
-                    double tmpScore = fitness(bitstring);
-
-                    // Update personal best if possible
-                    if (tmpScore > pFitnesses[i]) {
-                        pPersonalBests[i] = positionCloner.deepClone(pPositions[i]);
-                        pBitStrings[i] = bitstring;
-                        pFitnesses[i] = tmpScore;
-                    }
+                if (Helper.infeasible(bitstring, seq, ops)
+                        || pPositions[i][1] * pPositions[i][2] == 0)
+                    numOfInfeasibleSols++;
+                else if (tmpScore > pFitnesses[i]) {
+                    pPersonalBests[i] = positionCloner.deepClone(pPositions[i]);
+                    pBitStrings[i] = bitstring;
+                    pFitnesses[i] = tmpScore;
                 }
             }
             iter++;

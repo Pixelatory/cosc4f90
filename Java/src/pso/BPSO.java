@@ -65,6 +65,8 @@ public class BPSO extends PSO {
         double[][][] pVelocities = new double[n][numOfSeq][colLength];
         double[] pFitnesses = new double[n]; // so we only calculate fitness once
 
+        ObjectCloner<int[][]> posCloner = new ObjectCloner<>();
+
         numOfInfeasibleSols = 0;
 
         // Initializing the global best particle to all 0 integer bitmatrix
@@ -100,9 +102,8 @@ public class BPSO extends PSO {
                 }
             }
 
-            ObjectCloner<int[][]> cloner = new ObjectCloner<>();
             pPositions[i] = position;
-            pPersonalBests[i] = cloner.deepClone(position);
+            pPersonalBests[i] = posCloner.deepClone(position);
             pVelocities[i] = velocity;
             pFitnesses[i] = fitness(position);
         }
@@ -111,11 +112,10 @@ public class BPSO extends PSO {
         int iter = 0; // iteration counter
         while (iter < maxIter && gBestFitness < term[0]) {
 
-            // Checking of fitness is better than global best for updating
+            // Checking if fitness is better than global best for updating
             for (int i = 0; i < n; i++) {
                 if (pFitnesses[i] > gBestFitness) {
-                    ObjectCloner<int[][]> cloner = new ObjectCloner<>();
-                    gBestPos = cloner.deepClone(pPersonalBests[i]);
+                    gBestPos = posCloner.deepClone(pPersonalBests[i]);
                     gBestFitness = pFitnesses[i];
                 }
             }
@@ -147,13 +147,12 @@ public class BPSO extends PSO {
                 double tmpFitness = fitness(pPositions[i]);
 
                 // solution is infeasible, so increment count
-                if (tmpFitness == Double.MIN_VALUE)
+                if (Helper.infeasible(pPositions[i], seq, ops))
                     numOfInfeasibleSols++;
                 else if (tmpFitness > pFitnesses[i]) {
                     // current fitness is better than personal best's so update it
-                    ObjectCloner<int[][]> cloner = new ObjectCloner<>();
                     pFitnesses[i] = tmpFitness;
-                    pPersonalBests[i] = cloner.deepClone(pPositions[i]);
+                    pPersonalBests[i] = posCloner.deepClone(pPositions[i]);
                 }
             }
 

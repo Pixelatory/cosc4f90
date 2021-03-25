@@ -68,50 +68,40 @@ public class MGBPSO extends MGPSO {
         sArchive = new ArrayList<>();
         double l = 0; // lambda coefficient
 
+        ObjectCloner<int[][]> posCloner = new ObjectCloner<>();
+
         numOfInfeasibleSols = 0;
 
         // Initialize particles of each sub-swarm
         for (int i = 0; i < f.length; i++) {
-            // These are the containers for each sub-swarm
-            int[][][] newPositions = new int[n[i]][numOfSeqs][colLength];
-            double[][][] newVelocities = new double[n[i]][numOfSeqs][colLength];
-
             // Within these loops, each particle in each sub-swarm is made
             for (int j = 0; j < n[i]; j++) {
-                int[][] tmpPos = new int[numOfSeqs][colLength];
-                double[][] tmpVel = new double[numOfSeqs][colLength];
 
                 // This process initializes the particles
                 for (int k = 0; k < numOfSeqs; k++) {
                     for (int x = 0; x < colLength; x++) {
-                        tmpPos[k][x] = 0;
-                        tmpVel[k][x] = 0;
+                        pPositions[i][j][k][x] = 0;
+                        pVelocities[i][j][k][x] = 0;
                     }
 
                     // This part ensures that all originating particles are feasible
                     for (int y = 0; y < (colLength - seq[k].length()); y++) {
                         while (true) {
                             int randNum = ThreadLocalRandom.current().nextInt(0, colLength);
-                            if (tmpPos[k][randNum] != 1) {
-                                tmpPos[k][randNum] = 1;
+                            if (pPositions[i][j][k][randNum] != 1) {
+                                pPositions[i][j][k][randNum] = 1;
                                 break;
                             }
                         }
                     }
                 }
 
-                newPositions[j] = tmpPos;
-                newVelocities[j] = tmpVel;
-                pFitnesses[i][j] = f[i].calculate(tmpPos, seq);
+                pFitnesses[i][j] = f[i].calculate(pPositions[i][j], seq);
+                pPersonalBests[i][j] = posCloner.deepClone(pPositions[i][j]);
             }
 
-            ObjectCloner<int[][][]> cloner = new ObjectCloner<>();
-            pPositions[i] = newPositions;
-            pVelocities[i] = newVelocities;
-            pPersonalBests[i] = cloner.deepClone(newPositions);
-
             // Just set the global best here, but it'll be changed at the beginning of iterations anyways
-            gBest.add(new Pair<>(newPositions[0], pFitnesses[i][0]));
+            gBest.add(new Pair<>(pPositions[i][0], pFitnesses[i][0]));
         }
 
         // This is where the iterations begin
@@ -126,14 +116,12 @@ public class MGBPSO extends MGPSO {
             // Update global best and archive if applicable
             for (int i = 0; i < f.length; i++) {
                 for (int j = 0; j < n[i]; j++) {
-                    Helper.addToArchiveB(seq, sArchive, pPersonalBests[i][j], f, sumN);
-
                     // if infeasible, don't try to put into global best
-                    if (!Helper.infeasible(pPersonalBests[i][j], seq, ops)
-                            && pFitnesses[i][j] < gBest.get(i).getSecond()) {
-                        ObjectCloner<int[][]> cloner = new ObjectCloner<>();
-                        gBest.get(i).setSecond(pFitnesses[i][j]);
-                        gBest.get(i).setFirst(cloner.deepClone(pPersonalBests[i][j]));
+                    if (!Helper.infeasible(pPersonalBests[i][j], seq, ops)) {
+                        if (pFitnesses[i][j] < gBest.get(i).getSecond()) {
+                            gBest.get(i).setSecond(pFitnesses[i][j]);
+                            gBest.get(i).setFirst(posCloner.deepClone(pPersonalBests[i][j]));
+                        }
                     }
                 }
             }
@@ -169,9 +157,8 @@ public class MGBPSO extends MGPSO {
                     if (!Helper.infeasible(pPositions[i][j], seq, ops)) {
                         double tmpScore = f[i].calculate(pPositions[i][j], seq);
                         if (tmpScore < pFitnesses[i][j]) {
-                            ObjectCloner<int[][]> cloner = new ObjectCloner<>();
                             pFitnesses[i][j] = tmpScore;
-                            pPersonalBests[i][j] = cloner.deepClone(pPositions[i][j]);
+                            pPersonalBests[i][j] = posCloner.deepClone(pPositions[i][j]);
                         }
                     } else
                         numOfInfeasibleSols++;

@@ -1,5 +1,7 @@
 package util;
 
+import java.util.ArrayList;
+
 public class Sequences {
 
     public static String[] basic1 = {
@@ -54,6 +56,20 @@ public class Sequences {
             "VLASAGKDFELRLPVDARAE"
     };
 
+    // In RV12/BB12001
+    public static String[] yua6_caeel = {
+            "MVMSRTLVLVALLGFAYVCESALITNLPGAPISNFKQYSGYYNVGTKKNH",
+            "MLHYWFVESQSNPSTDPVLLWLTGGPGCSGLSALLTEWGPWNVNTDGATL",
+            "RTNPYSWNKNASILTLEAPAGVGYSYATDNNIATGDDQTASENWEALVAF",
+            "FNEFPQYKGNDFYVTGESYGGIYVPTLVQTILDRQSQSHINIKGLAIGNG",
+            "CVSANEGVDSLVNFLYHHGVVDQAKWEHMKTSCCHNDTDACPWHSFSEFS",
+            "ACGEFVEATQQTAWNGGLNPYNMYADCISTSASFRFGMEYERRFNKKYTP",
+            "EVLGTVPCLDESPVTNYLNRQDVRKALGIPSSLPAWSICSNAISYGYKRQ",
+            "YGDMTSRVLNAVNNNNLKMMLYNGDVDLACNALMGQRFTDKLGLTLSKKK",
+            "THFTVKGQIGGYVTQYKGSQVTFATVRGAGHMVPTDKPAVAEHIIQSFLF",
+            "NKAF"
+    };
+
     // In RV11/BB11002
     public static String[] labo_A = {
             "NLFVALYDFVASGDNTLSITKGEKLRVLGYNHNGEWCEAQTKNGQGWVPS",
@@ -75,5 +91,27 @@ public class Sequences {
             "EHAYYLQYQNVKADYFKNLWHVINWKEAERRFEF"
     };
 
+    private static int numOfUniqueChars(String[] seq) {
+        ArrayList<Character> uniqueChars = new ArrayList<>();
+        int count = 0;
 
+        for (String str : seq) {
+            for (char c : str.toCharArray()) {
+                if (!uniqueChars.contains(c)) {
+                    uniqueChars.add(c);
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Sequences.numOfUniqueChars(Sequences._1bbt_ac));
+        System.out.println(Sequences.numOfUniqueChars(Sequences.yua6_caeel));
+        System.out.println(Sequences.numOfUniqueChars(Sequences.labo_A));
+        System.out.println(Sequences.numOfUniqueChars(Sequences.CSPF_ECOLI));
+        System.out.println(Sequences.numOfUniqueChars(Sequences.SODM_CANAL));
+    }
 }

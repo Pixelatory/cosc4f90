@@ -236,7 +236,7 @@ public class Helper {
         for (int i = 0; i < seq.length; i++) {
             for (int j = 0; j < colLength; j++) {
 
-                double value = gen((i * colLength) + j, pos[0], pos[1], pos[2], pos[3]);
+                double value = gen(((i * colLength) + j) * 0.1, pos[0], pos[1], pos[2], pos[3]);
                 if (value > 0)
                     bitmatrix[i][j] = 1;
                 else
@@ -498,7 +498,6 @@ public class Helper {
      * <p>
      * Uses the updated crowding distance calculation from:
      *
-     * @param uniqueFitnesses
      * @param f
      */
     private static ArrayList<Pair<int[][], Double>> calculateCrowdingDistancesB(String[] seq,
