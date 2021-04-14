@@ -162,30 +162,30 @@ public class BPSO extends PSO {
 
     public static void main(String[] args) throws InterruptedException {
         Operator[] ops = {Operator.lt};
+        String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
+        double[] ws = {0.7098150314023034, 0.7861878289341226, 0.7226988763584911, 0.7566563010222623, 0.3260770959583924};
+        double[] c1s = {1.6788775458244407, 1.2489605895810598, 0.7877525185622731, 0.9360167168210383, 1.397180934100446};
+        double[] c2s = {0.899446463381824, 1.211314077689869, 1.3569405150479763, 0.8238319031198684, 1.3464223101885027};
+        double[] w1s = {1, 0, 0.5};
+        double[] w2s = {0, 1, 0.5};
 
-        System.out.println("1bbt_ac");
-        perform(Sequences._1bbt_ac, ops);
-
-        System.out.println("labo_A");
-        perform(Sequences.labo_A, ops);
-
-        System.out.println("CSPF_ECOLI");
-        perform(Sequences.CSPF_ECOLI, ops);
-
-        System.out.println("SODM_CANAL");
-        perform(Sequences.SODM_CANAL, ops);
+        for (int i = 0; i < seqss.length; i++) {
+            for (int j = 0; j < ws.length; j++) {
+                for (int k = 0; k < w1s.length; k++) {
+                    System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + w1s[k] + " " + w2s[k]);
+                    perform(seqss[i], ops, 30, ws[j], c1s[j], c2s[j], w1s[k], w2s[k]);
+                }
+            }
+        }
     }
 
-    public static void perform(String[] seq, Operator[] ops) throws InterruptedException {
+    public static void perform(String[] seq, Operator[] ops, int n, double w, double c1, double c2, double w1, double w2) throws InterruptedException {
         ArrayList<BPSO> bs = new ArrayList<>();
 
-        int n = 30;
         int maxIter = 5000;
-        double w1 = 0.5;
-        double w2 = 0.5;
 
         for (int i = 0; i < 30; i++) {
-            BPSO b = new BPSO(seq, n, 0.99, 2, 2, 11, 0, new double[]{Double.MAX_VALUE}, maxIter, w1, w2, ops);
+            BPSO b = new BPSO(seq, n, w, c1, c2, Double.MAX_VALUE, 0, new double[]{Double.MAX_VALUE}, maxIter, w1, w2, ops);
             b.start();
             bs.add(b);
         }
