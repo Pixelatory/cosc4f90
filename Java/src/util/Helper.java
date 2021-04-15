@@ -589,6 +589,7 @@ public class Helper {
     }
 
     public static void printInfo(String title, double highest, double lowest, double[] list) {
+        System.out.println(Arrays.toString(list));
         System.out.println("Best " + title + ": " + highest);
         System.out.println("Worst " + title + ": " + lowest);
         System.out.println("Average " + title + ": " + Helper.average(list));
@@ -597,6 +598,7 @@ public class Helper {
     }
 
     public static void printInfo(String title, int highest, int lowest, int[] list) {
+        System.out.println(Arrays.toString(list));
         System.out.println("Highest " + title + ": " + highest);
         System.out.println("Lowest " + title + ": " + lowest);
         System.out.println("Average " + title + ": " + Helper.average(list));
@@ -620,6 +622,7 @@ public class Helper {
             System.out.println("Lowest " + title + "[" + i + "]: " + lowest[i]);
             System.out.println("Average " + title + "[" + i + "]: " + Helper.average(list[i]));
             System.out.println("St. Dev. " + title + "[" + i + "]: " + Helper.stdev(list[i]));
+            System.out.println(Arrays.toString(list[i]));
             System.out.println();
         }
     }

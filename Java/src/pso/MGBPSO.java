@@ -123,6 +123,10 @@ public class MGBPSO extends MGPSO {
                             gBest.get(i).setFirst(posCloner.deepClone(pPersonalBests[i][j]));
                         }
                     }
+
+                    if(!Helper.infeasible(pPositions[i][j], seq, ops)) {
+                        Helper.addToArchiveB(seq, sArchive, pPositions[i][j], f, sumN);
+                    }
                 }
             }
 
@@ -174,8 +178,21 @@ public class MGBPSO extends MGPSO {
 
     public static void main(String[] args) throws Exception {
         Operator[] ops = {Operator.lt, Operator.gt};
-
-        perform(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+        String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
+        double[] ws = {0.7548684662307973, 0.664693311042931, 0.6283276486501926, 0.7519652725549882, 0.7499142729146882, 0.7444666103843537, 0.6002649267508061, 0.268990284735547, 0.121495528917823};
+        double[] c1s = {1.6403922907668573, 0.12797292579587216, 0.462377069982959, 1.659900433872437, 0.6484731483137582, 1.382159367589628, 1.39119402217411, 1.5805667363521902, 0.49423588598014656};
+        double[] c2s = {1.1689889680218306, 1.141633525977906, 0.3400439146349077, 0.17954734318382237, 1.8292436916244121, 0.35852915141793007, 1.7645977300331588, 1.2012673626684758, 0.32362374583425435};
+        double[] c3s = {1.0925215379609754, 1.894374658387147, 1.2075173599176188, 0.4740247791781249, 0.47188949238877376, 1.204326868805682, 0.3903042201164242, 1.1353123776616685, 0.5277558146365762};
+        int[] n1s = {30, 15, 20, 40};
+        int[] n2s = {30, 15, 40, 20};
+        for (int i = 0; i < seqss.length; i++) {
+            for (int j = 0; j < ws.length; j++) {
+                for (int k = 0; k < n1s.length; k++) {
+                    System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + c3s[j] + " " + n1s[k] + " " + n2s[k]);
+                    perform(seqss[i], new int[]{n1s[k], n2s[k]}, ws[j], c1s[j], c2s[j], c3s[j], ops);
+                }
+            }
+        }
     }
 
     public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {
