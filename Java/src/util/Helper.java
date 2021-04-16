@@ -612,6 +612,7 @@ public class Helper {
             System.out.println("Lowest " + title + "[" + i + "]: " + lowest[i]);
             System.out.println("Average " + title + "[" + i + "]: " + Helper.average(list[i]));
             System.out.println("St. Dev. " + title + "[" + i + "]: " + Helper.stdev(list[i]));
+            System.out.println(Arrays.toString(list[i]));
             System.out.println();
         }
     }

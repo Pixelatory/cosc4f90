@@ -177,7 +177,7 @@ public class MGBPSO extends MGPSO {
     }
 
     public static void main(String[] args) throws Exception {
-        Operator[] ops = {Operator.lt, Operator.gt};
+        Operator[] ops = {Operator.lt};
         String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
         double[] ws = {0.7548684662307973, 0.664693311042931, 0.6283276486501926, 0.7519652725549882, 0.7499142729146882, 0.7444666103843537, 0.6002649267508061, 0.268990284735547, 0.121495528917823};
         double[] c1s = {1.6403922907668573, 0.12797292579587216, 0.462377069982959, 1.659900433872437, 0.6484731483137582, 1.382159367589628, 1.39119402217411, 1.5805667363521902, 0.49423588598014656};
