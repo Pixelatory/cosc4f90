@@ -6,6 +6,8 @@ import util.Operator;
 import base.PSO;
 import util.Sequences;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -160,7 +162,8 @@ public class BPSO extends PSO {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, FileNotFoundException {
+        System.setOut(new PrintStream("output-file.txt"));
         Operator[] ops = {Operator.lt};
         String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
         double[] ws = {0.7098150314023034, 0.7861878289341226, 0.7226988763584911, 0.7566563010222623, 0.3260770959583924};
