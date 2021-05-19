@@ -4,7 +4,9 @@ import base.MGPSO;
 import org.kamranzafar.commons.cloner.ObjectCloner;
 import util.*;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MGAMPSO extends MGPSO {
@@ -175,21 +177,25 @@ public class MGAMPSO extends MGPSO {
     }
 
     public static void main(String[] args) throws Exception {
+        System.setOut(new PrintStream("mgampso-2.txt"));
         Operator[] ops = {Operator.lt};
-        System.out.println("BASIC 1");
-        perform(Sequences.basic1, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
+        String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
+        double[] ws = {0.7548684662307973, 0.664693311042931, 0.6283276486501926, 0.7519652725549882, 0.7499142729146882, 0.7444666103843537, 0.6002649267508061, 0.268990284735547, 0.121495528917823};
+        double[] c1s = {1.6403922907668573, 0.12797292579587216, 0.462377069982959, 1.659900433872437, 0.6484731483137582, 1.382159367589628, 1.39119402217411, 1.5805667363521902, 0.49423588598014656};
+        double[] c2s = {1.1689889680218306, 1.141633525977906, 0.3400439146349077, 0.17954734318382237, 1.8292436916244121, 0.35852915141793007, 1.7645977300331588, 1.2012673626684758, 0.32362374583425435};
+        double[] c3s = {1.0925215379609754, 1.894374658387147, 1.2075173599176188, 0.4740247791781249, 0.47188949238877376, 1.204326868805682, 0.3903042201164242, 1.1353123776616685, 0.5277558146365762};
+        int[] n1s = {30, 15, 20, 40};
+        int[] n2s = {30, 15, 40, 20};
+        for (int i = 2; i < seqss.length; i++) {
+            for (int j = 0; j < ws.length; j++) {
+                for (int k = 0; k < n1s.length; k++) {
+                    System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + c3s[j] + " " + n1s[k] + " " + n2s[k]);
+                    perform(seqss[i], new int[]{n1s[k], n2s[k]}, ws[j], c1s[j], c2s[j], c3s[j], ops);
+                }
+            }
+        }
 
-        /*System.out.println("BASIC 2");
-        perform(Sequences.basic2, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
-
-        System.out.println("MED 2");
-        perform(Sequences.med2, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
-
-        System.out.println("MED 3");
-        perform(Sequences.med3, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);
-
-        System.out.println("SPACES");
-        perform(Sequences.spaces, new int[]{20, 30}, 0.75, 1.0, 1.6, 1.05, ops);*/
+        Runtime.getRuntime().exec("shutdown -s");
     }
 
     public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {
@@ -199,7 +205,7 @@ public class MGAMPSO extends MGPSO {
         FitnessFunction[] f = {numOfAligned, insertedIndels};
 
         for (int i = 0; i < 30; i++) {
-            MGAMPSO ampso = new MGAMPSO(seq, n, w, c1, c2, c3, Double.MAX_VALUE, 0, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 1500, f, ops);
+            MGAMPSO ampso = new MGAMPSO(seq, n, w, c1, c2, c3, Double.MAX_VALUE, 0, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 2500, f, ops);
             ampso.start();
             mgampsos.add(ampso);
         }
@@ -227,6 +233,12 @@ public class MGAMPSO extends MGPSO {
         for (int i = 0; i < 30; i++) {
             MGAMPSO a = mgampsos.get(i);
             a.join();
+
+            Helper.calculateCrowdingDistancesA(seq, a.sArchive, f);
+            System.out.println("archive output " + i);
+            for(Triplet<double[], int[][], Double> v : a.sArchive) {
+                System.out.println(Arrays.toString(v.getFirst()) + " " + Arrays.deepToString(v.getSecond()) + " " + v.getThird());
+            }
 
             double result1 = f[0].calculate(a.gBest.get(0).getSecond(), seq);
             double result2 = f[1].calculate(a.gBest.get(1).getSecond(), seq);

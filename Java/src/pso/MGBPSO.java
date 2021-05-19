@@ -180,7 +180,7 @@ public class MGBPSO extends MGPSO {
     }
 
     public static void main(String[] args) throws Exception {
-        System.setOut(new PrintStream("output-file.txt"));
+        System.setOut(new PrintStream("output-file3.txt"));
         Operator[] ops = {Operator.lt};
         String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
         double[] ws = {0.7548684662307973, 0.664693311042931, 0.6283276486501926, 0.7519652725549882, 0.7499142729146882, 0.7444666103843537, 0.6002649267508061, 0.268990284735547, 0.121495528917823};
@@ -189,7 +189,7 @@ public class MGBPSO extends MGPSO {
         double[] c3s = {1.0925215379609754, 1.894374658387147, 1.2075173599176188, 0.4740247791781249, 0.47188949238877376, 1.204326868805682, 0.3903042201164242, 1.1353123776616685, 0.5277558146365762};
         int[] n1s = {30, 15, 20, 40};
         int[] n2s = {30, 15, 40, 20};
-        for (int i = 2; i < seqss.length; i++) {
+        for (int i = 1; i < 2; i++) {
             for (int j = 0; j < ws.length; j++) {
                 for (int k = 0; k < n1s.length; k++) {
                     System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + c3s[j] + " " + n1s[k] + " " + n2s[k]);
@@ -197,6 +197,7 @@ public class MGBPSO extends MGPSO {
                 }
             }
         }
+        Runtime.getRuntime().exec("shutdown -s");
     }
 
     public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {
@@ -206,7 +207,7 @@ public class MGBPSO extends MGPSO {
         FitnessFunction[] f = {numOfAligned, insertedIndels};
 
         for (int i = 0; i < 30; i++) {
-            MGBPSO bpso = new MGBPSO(seq, n, w, c1, c2, c3, Double.MAX_VALUE, 0, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 5000, f, ops);
+            MGBPSO bpso = new MGBPSO(seq, n, w, c1, c2, c3, Double.MAX_VALUE, 0, new double[]{-Double.MAX_VALUE, -Double.MAX_VALUE}, 2500, f, ops);
             bpso.start();
             mgbpsos.add(bpso);
         }
@@ -229,15 +230,16 @@ public class MGBPSO extends MGPSO {
 
         String[][] bestResultStrings = new String[2][];
 
-        // TODO: Find out what do to with archive
+        // TODO: Find out what do to with archive (crowding distances!)
 
         for (int i = 0; i < 30; i++) {
             MGBPSO b = mgbpsos.get(i);
             b.join();
 
+            Helper.calculateCrowdingDistancesB(seq, b.sArchive, f);
             System.out.println("archive output " + i);
             for(Pair<int[][], Double> v : b.sArchive) {
-                System.out.println(Arrays.deepToString(v.getFirst()));
+                System.out.println(Arrays.deepToString(v.getFirst()) + " " + v.getSecond());
             }
 
             double result1 = f[0].calculate(b.gBest.get(0).getFirst(), seq);

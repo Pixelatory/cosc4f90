@@ -373,11 +373,13 @@ public class Helper {
              If this is true then the archive is completely full so
              remove most crowded solution.
          */
-        if (sArchive.size() == limit) {
+        if (sArchive.size() >= limit) {
             calculateCrowdingDistancesB(seq, sArchive, f);
 
+            // The most crowded entry is at first position after sorting from calculateCrowdingDistancesB function
             Pair<int[][], Double> mostCrowdedEntry = sArchive.get(0);
 
+            // Not really sure why I'm doing this, but just a double checker I guess?
             for (Pair<int[][], Double> entry : sArchive) {
                 if (entry.getSecond() < mostCrowdedEntry.getSecond())
                     mostCrowdedEntry = entry;
@@ -426,11 +428,13 @@ public class Helper {
              If this is true then the archive is completely full so
              remove most crowded solution.
          */
-        if (sArchive.size() == limit) {
+        if (sArchive.size() >= limit) {
             calculateCrowdingDistancesA(seq, sArchive, f);
 
+            // The most crowded entry is at first position after sorting from calculateCrowdingDistancesA function
             Triplet<double[], int[][], Double> mostCrowdedEntry = sArchive.get(0);
 
+            // Again, not really sure why I'm double checking, but the result is definitely the most crowded one.
             for (Triplet<double[], int[][], Double> entry : sArchive) {
                 if (entry.getThird() < mostCrowdedEntry.getThird())
                     mostCrowdedEntry = entry;
@@ -462,7 +466,7 @@ public class Helper {
 
         int index = ThreadLocalRandom.current().nextInt(0, sArchive.size());
 
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < (k - 1); i++) {
             int tmp = ThreadLocalRandom.current().nextInt(0, sArchive.size());
             if (sArchive.get(index).getSecond() > sArchive.get(tmp).getSecond())
                 index = tmp;
@@ -474,16 +478,13 @@ public class Helper {
     public static double[] archiveGuideA(String[] seq,
                                          ArrayList<Triplet<double[], int[][], Double>> sArchive,
                                          FitnessFunction[] f,
-                                         int k) throws Exception {
-
-        if(sArchive.size() == 0)
-            return null;
+                                         int k) {
 
         calculateCrowdingDistancesA(seq, sArchive, f);
 
         int index = ThreadLocalRandom.current().nextInt(0, sArchive.size());
 
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < (k - 1); i++) {
             int tmp = ThreadLocalRandom.current().nextInt(0, sArchive.size());
             if (sArchive.get(index).getThird() > sArchive.get(tmp).getThird())
                 index = tmp;
@@ -500,18 +501,16 @@ public class Helper {
      *
      * @param f
      */
-    private static ArrayList<Pair<int[][], Double>> calculateCrowdingDistancesB(String[] seq,
-                                                                                ArrayList<Pair<int[][], Double>> sArchive,
-                                                                                FitnessFunction[] f) {
+    public static ArrayList<Pair<int[][], Double>> calculateCrowdingDistancesB(String[] seq,
+                                                                               ArrayList<Pair<int[][], Double>> sArchive,
+                                                                               FitnessFunction[] f) {
+        for (Pair<int[][], Double> tmp : sArchive)
+            tmp.setSecond(0.0);
 
         for (FitnessFunction ff : f) {
             // Sort sArchive in ascending order
             Comparator<Pair<int[][], Double>> c = (o1, o2) -> ff.calculate(o1.getFirst(), seq) > ff.calculate(o2.getFirst(), seq) ? 1 : 0;
             sArchive.sort(c);
-
-            // Set the boundary distances to infinite (max value)
-            sArchive.get(0).setSecond(Double.MAX_VALUE);
-            sArchive.get(sArchive.size() - 1).setSecond(Double.MAX_VALUE);
 
             for (int i = 1; i < sArchive.size() - 1; i++) {
                 double curr = sArchive.get(i).getSecond();
@@ -519,6 +518,10 @@ public class Helper {
                 double prev = ff.calculate(sArchive.get(i - 1).getFirst(), seq);
                 sArchive.get(i).setSecond(curr + next - prev);
             }
+
+            // Set the boundary distances to infinite (max value)
+            sArchive.get(0).setSecond(Double.MAX_VALUE);
+            sArchive.get(sArchive.size() - 1).setSecond(Double.MAX_VALUE);
         }
 
         // This will sort uniqueDistancedFitnesses based on distance (ascending)
@@ -528,18 +531,17 @@ public class Helper {
         return sArchive;
     }
 
-    private static ArrayList<Triplet<double[], int[][], Double>> calculateCrowdingDistancesA(String[] seq,
-                                                                                             ArrayList<Triplet<double[], int[][], Double>> sArchive,
-                                                                                             FitnessFunction[] f) {
+    public static ArrayList<Triplet<double[], int[][], Double>> calculateCrowdingDistancesA(String[] seq,
+                                                                                            ArrayList<Triplet<double[], int[][], Double>> sArchive,
+                                                                                            FitnessFunction[] f) {
+
+        for (Triplet<double[], int[][], Double> g : sArchive)
+            g.setThird(0.0);
 
         for (FitnessFunction ff : f) {
             // Sort sArchive in ascending order
             Comparator<Triplet<double[], int[][], Double>> c = (o1, o2) -> ff.calculate(o1.getSecond(), seq) > ff.calculate(o2.getSecond(), seq) ? 1 : 0;
             sArchive.sort(c);
-
-            // Set the boundary distances to infinite (max value)
-            sArchive.get(0).setThird(Double.MAX_VALUE);
-            sArchive.get(sArchive.size() - 1).setThird(Double.MAX_VALUE);
 
             for (int i = 1; i < sArchive.size() - 1; i++) {
                 double curr = sArchive.get(i).getThird();
@@ -547,6 +549,10 @@ public class Helper {
                 double prev = ff.calculate(sArchive.get(i - 1).getSecond(), seq);
                 sArchive.get(i).setThird(curr + next - prev);
             }
+
+            // Set the boundary distances to infinite (max value)
+            sArchive.get(0).setThird(Double.MAX_VALUE);
+            sArchive.get(sArchive.size() - 1).setThird(Double.MAX_VALUE);
         }
 
         // This will sort uniqueDistancedFitnesses based on distance (ascending)
@@ -626,5 +632,35 @@ public class Helper {
             System.out.println(Arrays.toString(list[i]));
             System.out.println();
         }
+    }
+
+    /**
+     * Calculates the hyper volume indicator value from a set of points against a reference.
+     *
+     * @param p   Set of points
+     * @param ref Reference point
+     * @return Hyper volume indicator
+     */
+    public static double hypervolumeIndicator(Pair<Integer, Integer>[] p, Pair<Integer, Integer> ref) {
+        Arrays.sort(p, (o1, o2) -> {
+            if (o1.getSecond() > o2.getSecond())
+                return 1;
+            else if (o1.getSecond().equals(o2.getSecond()))
+                return 0;
+            else
+                return -1;
+        });
+
+        Pair<Integer, Integer> lastP = p[p.length - 1];
+
+        int totalAreas = 0;
+
+        for (int i = 0; i < p.length - 1; i++) {
+            totalAreas += (ref.getFirst() - p[i].getFirst()) * (p[i + 1].getFirst() - p[i].getFirst());
+        }
+
+        totalAreas += (ref.getFirst() - lastP.getFirst()) * (ref.getSecond() - lastP.getSecond());
+
+        return totalAreas;
     }
 }
