@@ -1,3 +1,6 @@
+import util.Helper;
+import util.Pair;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Testing {
@@ -12,7 +15,7 @@ public class Testing {
     }
 
     public static void main(String[] args) {
-        System.out.println(test(1.496180, 1.496180, 0.729844));
+        //System.out.println(test(1.496180, 1.496180, 0.729844));
 
         /*for (int i = 0; i < 10000; i++) {
             double c1 = ThreadLocalRandom.current().nextDouble(0, 2);
@@ -22,7 +25,7 @@ public class Testing {
                 System.out.println(c1 + " " + c2 + " " + w);
         }*/
 
-        for (int i = 0; i < 10000; i++) {
+        /*for (int i = 0; i < 10000; i++) {
             double c1 = ThreadLocalRandom.current().nextDouble(0, 2);
             double c2 = ThreadLocalRandom.current().nextDouble(0, 2);
             double c3 = ThreadLocalRandom.current().nextDouble(0, 2);
@@ -36,6 +39,10 @@ public class Testing {
             }
             if (tmp)
                 System.out.println(c1 + " " + c2 + " " + c3 + " " + w);
-        }
+        }*/
+        Pair<Integer, Integer>[] p = new Pair[]{new Pair<>(-25, 5), new Pair<>(-15, 10)};
+        Pair<Integer, Integer>[] p2 = new Pair[]{new Pair<>(-20, 5), new Pair<>(-10, 10)};
+        System.out.println(Helper.hypervolumeIndicator(p, new Pair<>(-50, 20)));
+        System.out.println(Helper.hypervolumeIndicator(p2, new Pair<>(-50, 20)));
     }
 }

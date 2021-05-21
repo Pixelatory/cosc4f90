@@ -1,22 +1,23 @@
 package pso;
 
 import org.kamranzafar.commons.cloner.ObjectCloner;
-import util.Helper;
-import util.Operator;
+import util.*;
 import base.PSO;
-import util.Sequences;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 
 public class BPSO extends PSO {
     private final double w1;
     private final double w2;
-    private int numOfInfeasibleSols = 0;
     private int[][] gBestPos;
     private double gBestFitness;
+    private int infeasibleSols; // Holds count of infeasible solutions from each iteration
+    private ArrayList<Pair<Integer, Double>> gBests; // Holds global best fitness and iteration value of its superiority
 
     private double fitness(int[][] bitmatrix) {
         return Helper.aggregatedFunction(bitmatrix, seq, w1, w2, true, ops);
@@ -66,10 +67,11 @@ public class BPSO extends PSO {
         int[][][] pPersonalBests = new int[n][numOfSeq][colLength];
         double[][][] pVelocities = new double[n][numOfSeq][colLength];
         double[] pFitnesses = new double[n]; // so we only calculate fitness once
+        infeasibleSols = 0;
+
+        gBests = new ArrayList<>();
 
         ObjectCloner<int[][]> posCloner = new ObjectCloner<>();
-
-        numOfInfeasibleSols = 0;
 
         // Initializing the global best particle to all 0 integer bitmatrix
         for (int i = 0; i < numOfSeq; i++) {
@@ -119,6 +121,7 @@ public class BPSO extends PSO {
                 if (pFitnesses[i] > gBestFitness) {
                     gBestPos = posCloner.deepClone(pPersonalBests[i]);
                     gBestFitness = pFitnesses[i];
+                    gBests.add(new Pair<>(iter, gBestFitness));
                 }
             }
 
@@ -150,7 +153,7 @@ public class BPSO extends PSO {
 
                 // solution is infeasible, so increment count
                 if (Helper.infeasible(pPositions[i], seq, ops))
-                    numOfInfeasibleSols++;
+                    infeasibleSols++;
                 else if (tmpFitness > pFitnesses[i]) {
                     // current fitness is better than personal best's so update it
                     pFitnesses[i] = tmpFitness;
@@ -162,30 +165,46 @@ public class BPSO extends PSO {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException, FileNotFoundException {
-        System.setOut(new PrintStream("output-file.txt"));
-        Operator[] ops = {Operator.lt};
-        String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
+    public static void main(String[] args) throws InterruptedException, IOException {
+        System.setOut(new PrintStream("output-file-bpso-ltgt-preliminary.txt"));
+        Operator[] ops = {Operator.lt, Operator.gt};
+        String[][] seqss = {TFAParser.seq1,
+                TFAParser.seq2,
+                TFAParser.seq3,
+                TFAParser.seq4,
+                TFAParser.seq5,
+                TFAParser.seq6,
+                TFAParser.seq7,
+                TFAParser.seq8,
+                TFAParser.seq9,
+                TFAParser.seq10,
+                TFAParser.seq11,
+                TFAParser.seq12};
         double[] ws = {0.7098150314023034, 0.7861878289341226, 0.7226988763584911, 0.7566563010222623, 0.3260770959583924};
         double[] c1s = {1.6788775458244407, 1.2489605895810598, 0.7877525185622731, 0.9360167168210383, 1.397180934100446};
         double[] c2s = {0.899446463381824, 1.211314077689869, 1.3569405150479763, 0.8238319031198684, 1.3464223101885027};
         double[] w1s = {1, 0, 0.5};
         double[] w2s = {0, 1, 0.5};
+        int[] ns = {30, 40, 50};
 
         for (int i = 0; i < seqss.length; i++) {
-            for (int j = 0; j < ws.length; j++) {
-                for (int k = 0; k < w1s.length; k++) {
-                    System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + w1s[k] + " " + w2s[k]);
-                    perform(seqss[i], ops, 30, ws[j], c1s[j], c2s[j], w1s[k], w2s[k]);
+            for (int t = 0; t < ns.length; t++) {
+                for (int j = 0; j < ws.length; j++) {
+                    for (int k = 0; k < w1s.length; k++) {
+                        System.out.println(i + " " + ns[t] + " " + ws[j] + " " + c1s[j] + " " + c2s[j] + " " + w1s[k] + " " + w2s[k]);
+                        perform(seqss[i], ops, ns[t], ws[j], c1s[j], c2s[j], w1s[k], w2s[k]);
+                    }
                 }
             }
         }
+
+        Process child = Runtime.getRuntime().exec("shutdown -s");
     }
 
     public static void perform(String[] seq, Operator[] ops, int n, double w, double c1, double c2, double w1, double w2) throws InterruptedException {
         ArrayList<BPSO> bs = new ArrayList<>();
 
-        int maxIter = 5000;
+        int maxIter = 2500;
 
         for (int i = 0; i < 30; i++) {
             BPSO b = new BPSO(seq, n, w, c1, c2, Double.MAX_VALUE, 0, new double[]{Double.MAX_VALUE}, maxIter, w1, w2, ops);
@@ -228,7 +247,7 @@ public class BPSO extends PSO {
                 lowestResult = result;
 
             // Overall number of infeasible solutions
-            int numOfInfeasibleSols = bs.get(i).numOfInfeasibleSols;
+            int numOfInfeasibleSols = IntStream.of(bs.get(i).infeasibleSols).sum();
             infeasibleAmountsList[i] = numOfInfeasibleSols;
 
             if (numOfInfeasibleSols > highestInfeasible)

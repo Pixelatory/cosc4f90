@@ -656,10 +656,10 @@ public class Helper {
         int totalAreas = 0;
 
         for (int i = 0; i < p.length - 1; i++) {
-            totalAreas += (ref.getFirst() - p[i].getFirst()) * (p[i + 1].getFirst() - p[i].getFirst());
+            totalAreas += Math.abs(ref.getFirst() - p[i].getFirst()) * Math.abs(p[i + 1].getFirst() - p[i].getFirst());
         }
 
-        totalAreas += (ref.getFirst() - lastP.getFirst()) * (ref.getSecond() - lastP.getSecond());
+        totalAreas += Math.abs(ref.getFirst() - lastP.getFirst()) * Math.abs(ref.getSecond() - lastP.getSecond());
 
         return totalAreas;
     }
