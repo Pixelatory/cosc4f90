@@ -8,6 +8,7 @@ import util.Sequences;
 import util.TFAParser;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -149,9 +150,9 @@ public class AMPSO extends AM {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException, FileNotFoundException {
-        System.setOut(new PrintStream("output-file-ampso-ltgt-preliminary.txt"));
-        Operator[] ops = {Operator.lt, Operator.gt};
+    public static void main(String[] args) throws InterruptedException, IOException {
+        System.setOut(new PrintStream("output-file-ampso-lt-preliminary.txt"));
+        Operator[] ops = {Operator.lt};
         String[][] seqss = {TFAParser.seq1,
                 TFAParser.seq2,
                 TFAParser.seq3,
@@ -181,7 +182,7 @@ public class AMPSO extends AM {
                 }
             }
         }
-
+        Process child = Runtime.getRuntime().exec("shutdown -s");
     }
 
     public static void perform(String[] seq, Operator[] ops, int n, double w, double c1, double c2, double w1, double w2) throws InterruptedException {

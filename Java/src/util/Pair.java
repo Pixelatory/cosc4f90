@@ -1,6 +1,8 @@
 package util;
 
-public class Pair<K, V> implements FixedCollection {
+import java.io.Serializable;
+
+public class Pair<K, V> implements FixedCollection, Serializable {
     private K k;
     private V v;
 
@@ -31,6 +33,6 @@ public class Pair<K, V> implements FixedCollection {
 
     @Override
     public String toString() {
-        return "Pair{" + k + ", " + v + "}";
+        return "(" + k + ", " + v + ")";
     }
 }

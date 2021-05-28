@@ -291,8 +291,6 @@ public class Helper {
             if (res1 <= res2)
                 if (res1 < res2)
                     betterInAtLeastOne = true;
-                else
-                    return false;
         }
 
         return betterInAtLeastOne;

@@ -5,6 +5,8 @@ import org.kamranzafar.commons.cloner.ObjectCloner;
 import util.*;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -127,7 +129,7 @@ public class MGBPSO extends MGPSO {
                         }
                     }
 
-                    if(!Helper.infeasible(pPositions[i][j], seq, ops)) {
+                    if (!Helper.infeasible(pPositions[i][j], seq, ops)) {
                         Helper.addToArchiveB(seq, sArchive, pPositions[i][j], f, sumN);
                     }
                 }
@@ -180,16 +182,27 @@ public class MGBPSO extends MGPSO {
     }
 
     public static void main(String[] args) throws Exception {
-        System.setOut(new PrintStream("output-file3.txt"));
-        Operator[] ops = {Operator.lt};
-        String[][] seqss = {Sequences._1bbt_ac, Sequences.yua6_caeel, Sequences.labo_A, Sequences.CSPF_ECOLI, Sequences.SODM_CANAL};
+        System.setOut(new PrintStream("output-file-mgbpso-ltgt-preliminary.txt"));
+        Operator[] ops = {Operator.lt, Operator.gt};
+        String[][] seqss = {TFAParser.seq1,
+                TFAParser.seq2,
+                TFAParser.seq3,
+                TFAParser.seq4,
+                TFAParser.seq5,
+                TFAParser.seq6,
+                TFAParser.seq7,
+                TFAParser.seq8,
+                TFAParser.seq9,
+                TFAParser.seq10,
+                TFAParser.seq11,
+                TFAParser.seq12};
         double[] ws = {0.7548684662307973, 0.664693311042931, 0.6283276486501926, 0.7519652725549882, 0.7499142729146882, 0.7444666103843537, 0.6002649267508061, 0.268990284735547, 0.121495528917823};
         double[] c1s = {1.6403922907668573, 0.12797292579587216, 0.462377069982959, 1.659900433872437, 0.6484731483137582, 1.382159367589628, 1.39119402217411, 1.5805667363521902, 0.49423588598014656};
         double[] c2s = {1.1689889680218306, 1.141633525977906, 0.3400439146349077, 0.17954734318382237, 1.8292436916244121, 0.35852915141793007, 1.7645977300331588, 1.2012673626684758, 0.32362374583425435};
         double[] c3s = {1.0925215379609754, 1.894374658387147, 1.2075173599176188, 0.4740247791781249, 0.47188949238877376, 1.204326868805682, 0.3903042201164242, 1.1353123776616685, 0.5277558146365762};
         int[] n1s = {30, 15, 20, 40};
         int[] n2s = {30, 15, 40, 20};
-        for (int i = 1; i < 2; i++) {
+        for (int i = 0; i < seqss.length; i++) {
             for (int j = 0; j < ws.length; j++) {
                 for (int k = 0; k < n1s.length; k++) {
                     System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + c3s[j] + " " + n1s[k] + " " + n2s[k]);
@@ -212,6 +225,12 @@ public class MGBPSO extends MGPSO {
             mgbpsos.add(bpso);
         }
 
+        /*
+            [2][30] -> 2 is because there are 2 objective functions, so global best from both is set
+            0 -> numOfAligned
+            1 -> insertedIndels
+         */
+
         double[][] gBestResultsList = new double[2][30];
         double[] highestResult = {Double.MIN_VALUE, Double.MIN_VALUE};
         double[] lowestResult = {Double.MAX_VALUE, Double.MAX_VALUE};
@@ -230,16 +249,21 @@ public class MGBPSO extends MGPSO {
 
         String[][] bestResultStrings = new String[2][];
 
-        // TODO: Find out what do to with archive (crowding distances!)
+        ArrayList<ArrayList<Pair<Integer, Integer>>> pairs = new ArrayList<>();
 
         for (int i = 0; i < 30; i++) {
             MGBPSO b = mgbpsos.get(i);
             b.join();
 
+            pairs.add(new ArrayList<>());
+
             Helper.calculateCrowdingDistancesB(seq, b.sArchive, f);
             System.out.println("archive output " + i);
-            for(Pair<int[][], Double> v : b.sArchive) {
-                System.out.println(Arrays.deepToString(v.getFirst()) + " " + v.getSecond());
+            for (Pair<int[][], Double> v : b.sArchive) {
+                int f1 = Helper.numOfAlignedChars(Helper.bitsToStrings(v.getFirst(), seq));
+                int f2 = Helper.numOfInsertedIndels(v.getFirst(), seq);
+                System.out.println("(" + f1 + "," + f2 + ") " + Arrays.deepToString(v.getFirst()) + " " + v.getSecond());
+                pairs.get(i).add(new Pair<>(f1, f2));
             }
 
             double result1 = f[0].calculate(b.gBest.get(0).getFirst(), seq);
@@ -306,6 +330,10 @@ public class MGBPSO extends MGPSO {
             if (numOfInsertedIndels2 < lowestInsertedIndels[1])
                 lowestInsertedIndels[1] = numOfInsertedIndels2;
         }
+
+        FileOutputStream fos = new FileOutputStream("mgbpso-" + w);
+        ObjectOutputStream out = new ObjectOutputStream(fos);
+        out.writeObject(pairs);
 
         System.out.println("Final Results:");
 

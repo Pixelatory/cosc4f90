@@ -93,5 +93,14 @@ public class TFAParser {
         System.out.println(Arrays.toString(getStrings(file10)));
         System.out.println(Arrays.toString(getStrings(file11)));
         System.out.println(Arrays.toString(getStrings(file12)));
+
+        String[][] strs = {seq1, seq2, seq3, seq4, seq5, seq6, seq7, seq8, seq9, seq10, seq11, seq12};
+
+        for(String[] s : strs) {
+            System.out.print(s.length + " ");
+            for(String ss : s)
+                System.out.print(ss.length() + " ");
+            System.out.println();
+        }
     }
 }
