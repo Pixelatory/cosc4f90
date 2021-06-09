@@ -202,18 +202,31 @@ public class MGBPSO extends MGPSO {
         double[] c3s = {1.0925215379609754, 1.894374658387147, 1.2075173599176188, 0.4740247791781249, 0.47188949238877376, 1.204326868805682, 0.3903042201164242, 1.1353123776616685, 0.5277558146365762};
         int[] n1s = {30, 15, 20, 40};
         int[] n2s = {30, 15, 40, 20};
+
         for (int i = 0; i < seqss.length; i++) {
             for (int j = 0; j < ws.length; j++) {
                 for (int k = 0; k < n1s.length; k++) {
                     System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + c3s[j] + " " + n1s[k] + " " + n2s[k]);
-                    perform(seqss[i], new int[]{n1s[k], n2s[k]}, ws[j], c1s[j], c2s[j], c3s[j], ops);
+                    perform(seqss[i], new int[]{n1s[k], n2s[k]}, ws[j], c1s[j], c2s[j], c3s[j], ops, i);
                 }
             }
         }
+
+        System.setOut(new PrintStream("output-file-mgampso-lt-preliminary.txt"));
+        ops = new Operator[]{Operator.lt};
+        for (int i = 0; i < seqss.length; i++) {
+            for (int j = 0; j < ws.length; j++) {
+                for (int k = 0; k < n1s.length; k++) {
+                    System.out.println(ws[j] + " " + c1s[j] + " " + c2s[j] + " " + c3s[j] + " " + n1s[k] + " " + n2s[k]);
+                    MGAMPSO.perform(seqss[i], new int[]{n1s[k], n2s[k]}, ws[j], c1s[j], c2s[j], c3s[j], ops, i);
+                }
+            }
+        }
+
         Runtime.getRuntime().exec("shutdown -s");
     }
 
-    public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops) throws Exception {
+    public static void perform(String[] seq, int[] n, double w, double c1, double c2, double c3, Operator[] ops, int seqNum) throws Exception {
         ArrayList<MGBPSO> mgbpsos = new ArrayList<>();
         FitnessFunction numOfAligned = (bitmatrix, tmpSeq) -> -Helper.numOfAlignedChars(Helper.bitsToStrings(bitmatrix, tmpSeq));
         FitnessFunction insertedIndels = Helper::numOfInsertedIndels;
@@ -331,7 +344,7 @@ public class MGBPSO extends MGPSO {
                 lowestInsertedIndels[1] = numOfInsertedIndels2;
         }
 
-        FileOutputStream fos = new FileOutputStream("mgbpso-" + w);
+        FileOutputStream fos = new FileOutputStream("mgbpso-" + seqNum + "-" + n[0] + "-" + w);
         ObjectOutputStream out = new ObjectOutputStream(fos);
         out.writeObject(pairs);
 

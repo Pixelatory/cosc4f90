@@ -284,37 +284,36 @@ public class Helper {
                                      FitnessFunction[] f) {
         boolean betterInAtLeastOne = false;
 
-        for (FitnessFunction ff : f) {
-            double res1 = ff.calculate(bm1, seq);
-            double res2 = ff.calculate(bm2, seq);
+        for (int i = 0; i < f.length; i++) {
+            double res1 = f[i].calculate(bm1, seq);
+            double res2 = f[i].calculate(bm2, seq);
 
-            if (res1 <= res2)
-                if (res1 < res2)
+            if (res1 <= res2) {
+                if (res1 < res2) {
                     betterInAtLeastOne = true;
+                }
+            } else
+                return false;
+
         }
 
         return betterInAtLeastOne;
     }
 
     /**
-     * Checks that two bitmatrixes are the same.
+     * Checks if two bitmatrices have the same fitness function results.
      *
+     * @param f
+     * @param seq
      * @param x
      * @param y
-     * @return
+     * @rtype boolean
      */
-    private static boolean theSame(int[][] x,
-                                   int[][] y) {
-        for (int i = 0; i < x.length; i++) {
-            if (x[i].length != y[i].length)
+    private static boolean theSame(FitnessFunction[] f, String[] seq, int[][] x, int[][] y) {
+        for(FitnessFunction ff : f) {
+            if(ff.calculate(x, seq) != ff.calculate(y, seq))
                 return false;
-
-            for (int j = 0; j < x[i].length; j++) {
-                if (x[i][j] != y[i][j])
-                    return false;
-            }
         }
-
         return true;
     }
 
@@ -349,8 +348,7 @@ public class Helper {
             else if (dominates(seq, x, s.getFirst(), f)) // x dominates archive entry
                 aDominated.add(s);
 
-            // x and archive entry are the exact same
-            if (theSame(x, s.getFirst()))
+            if(theSame(f, seq, x, s.getFirst()))
                 return;
         }
 
@@ -404,8 +402,7 @@ public class Helper {
             else if (dominates(seq, x.getSecond(), s.getSecond(), f)) // x dominates archive entry
                 aDominated.add(s);
 
-            // x and archive entry are the exact same
-            if (theSame(x.getSecond(), s.getSecond()))
+            if(theSame(f, seq, x.getSecond(), s.getSecond()))
                 return;
         }
 
@@ -612,22 +609,22 @@ public class Helper {
 
     public static void printInfo(String title, double[] highest, double[] lowest, double[][] list) {
         for (int i = 0; i < highest.length; i++) {
+            System.out.println(Arrays.toString(list[i]));
             System.out.println("Highest " + title + "[" + i + "]: " + highest[i]);
             System.out.println("Lowest " + title + "[" + i + "]: " + lowest[i]);
             System.out.println("Average " + title + "[" + i + "]: " + Helper.average(list[i]));
             System.out.println("St. Dev. " + title + "[" + i + "]: " + Helper.stdev(list[i]));
-            System.out.println(Arrays.toString(list[i]));
             System.out.println();
         }
     }
 
     public static void printInfo(String title, int[] highest, int[] lowest, int[][] list) {
         for (int i = 0; i < highest.length; i++) {
+            System.out.println(Arrays.toString(list[i]));
             System.out.println("Highest " + title + "[" + i + "]: " + highest[i]);
             System.out.println("Lowest " + title + "[" + i + "]: " + lowest[i]);
             System.out.println("Average " + title + "[" + i + "]: " + Helper.average(list[i]));
             System.out.println("St. Dev. " + title + "[" + i + "]: " + Helper.stdev(list[i]));
-            System.out.println(Arrays.toString(list[i]));
             System.out.println();
         }
     }

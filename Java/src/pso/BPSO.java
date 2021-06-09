@@ -137,6 +137,8 @@ public class BPSO extends PSO {
                                 + r1 * c1 * (pPersonalBests[i][j][k] - pPositions[i][j][k])
                                 + r2 * c2 * (gBestPos[j][k] - pPositions[i][j][k]);
 
+                        System.out.println(pVelocities[i][j][k]);
+
                         if (vmaxiterlimit > iter) {
                             if (pVelocities[i][j][k] > vmax)
                                 pVelocities[i][j][k] = vmax;
@@ -166,7 +168,7 @@ public class BPSO extends PSO {
     }
 
     public static void main(String[] args) throws InterruptedException, IOException {
-        System.setOut(new PrintStream("output-file-bpso-ltgt-preliminary.txt"));
+        //System.setOut(new PrintStream("output-file-bpso-ltgt-preliminary.txt"));
         Operator[] ops = {Operator.lt, Operator.gt};
         String[][] seqss = {TFAParser.seq1,
                 TFAParser.seq2,
