@@ -19,7 +19,7 @@ public class TFAParser {
     public static String[] seq10;
     public static String[] seq11;
     public static String[] seq12;
-    public static String[] seq13;
+    public static String[] OneAMK;
 
     static {
         try {
@@ -35,6 +35,7 @@ public class TFAParser {
             seq10 = getStrings(new File("./bb3_release/RV12/BB12009.tfa"));
             seq11 = getStrings(new File("./bb3_release/RV12/BB12014.tfa"));
             seq12 = getStrings(new File("./bb3_release/RV12/BB12020.tfa"));
+            OneAMK = getStrings(new File("./bb3_release/RV12/BB12004.tfa"));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

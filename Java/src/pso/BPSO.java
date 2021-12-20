@@ -3,7 +3,6 @@ package pso;
 import org.kamranzafar.commons.cloner.ObjectCloner;
 import util.*;
 import base.PSO;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;

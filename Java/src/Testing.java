@@ -42,7 +42,21 @@ public class Testing {
         }*/
         Pair<Integer, Integer>[] p = new Pair[]{new Pair<>(-25, 5), new Pair<>(-15, 10)};
         Pair<Integer, Integer>[] p2 = new Pair[]{new Pair<>(-20, 5), new Pair<>(-10, 10)};
-        System.out.println(Helper.hypervolumeIndicator(p, new Pair<>(-50, 20)));
-        System.out.println(Helper.hypervolumeIndicator(p2, new Pair<>(-50, 20)));
+        //System.out.println(Helper.hypervolumeIndicator(p, new Pair<>(-50, 20)));
+        //System.out.println(Helper.hypervolumeIndicator(p2, new Pair<>(-50, 20)));
+
+        String[] seq = {
+                "FFFD",
+                "PDFD",
+                "PFFD",
+                "PDDF",
+        };
+        int[][] bitmatrix = {
+                {0,0,0,1,0},
+                {0,0,0,1,0},
+                {0,0,0,1,0},
+                {0,0,0,1,0},
+        };
+        System.out.println(Helper.Similarity(bitmatrix, seq, false, null));
     }
 }

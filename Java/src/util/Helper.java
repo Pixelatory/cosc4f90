@@ -6,6 +6,73 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Helper {
+
+    /**
+     * M. Kaya, A. Sarhan, R. Alhajj, Multiple Sequence Alignment
+     * with Affine Gap by Using Multi-Objective Genetic Algorithm, Computer Methods and
+     * Programs in Biomedicine (2014), http://dx.doi.org/10.1016/j.cmpb.2014.01.013
+     * <p>
+     * Similarity:
+     * The sum over the dominant character value in a column,
+     * divided by the length of the alignment. Gaps are ignored.
+     * <p>
+     * Examples are found in the cited paper.
+     */
+    public static double Similarity(int[][] bitmatrix,
+                                    String[] seq,
+                                    boolean checkInfeasibility,
+                                    Operator[] ops) {
+        if (checkInfeasibility && ops == null)
+            throw new IllegalArgumentException("Checking for infeasibility but ops are null!");
+
+        if (checkInfeasibility && infeasible(bitmatrix, seq, ops))
+            return Double.MIN_VALUE;
+
+        String[] strings = bitsToStrings(bitmatrix, seq);
+
+        double result = 0;
+        int numOfRows = bitmatrix.length;
+        int alignmentLength = bitmatrix[0].length;
+
+        /*
+            Go through each column of bitmatrix, then
+            each row, keeping track of the character that
+            appears the most in the column. This character
+            is then the dominant one and its value is used.
+
+            Dominance: # of times character appears in column / # of rows
+         */
+        HashMap<Character, Integer> charList = new HashMap<>();
+        for (int i = 0; i < bitmatrix[0].length; i++) {
+            int numOfDashesInCol = 0;
+            for (int j = 0; j < bitmatrix.length; j++) {
+                char character = strings[j].charAt(i);
+                if (character == '-') {
+                    numOfDashesInCol++;
+                    continue;
+                }
+
+                if(!charList.containsKey(character))
+                    charList.put(character, 1);
+                else
+                    charList.replace(character, charList.get(character) + 1);
+            }
+
+            // Here, the character mapping for a column is complete
+            int dominant = 0;
+            for(Integer val : charList.values())
+                if(val > dominant)
+                    dominant = val;
+
+            if(numOfRows - numOfDashesInCol != 0)
+                result += (double) dominant / (numOfRows - numOfDashesInCol);
+
+            charList.clear();
+        }
+
+        return result / alignmentLength;
+    }
+
     /**
      * getColLength
      * Returns an integer 1.2 times greater than the longest sequence
@@ -211,14 +278,25 @@ public class Helper {
     }
 
     /**
-     * The classic sigmoid function.
+     * Angular Modulated Generation Function
+     *
+     * @param x
+     * @param a
+     * @param b
+     * @param c
+     * @param d
+     * @return float
      */
-    public static double Sigmoid(double x) {
-        return 1 / (1 + Math.exp(-x));
+    public static double gen(double x,
+                             double a,
+                             double b,
+                             double c,
+                             double d) {
+        return Math.sin(2 * Math.PI * (x - a) * b * Math.cos(2 * Math.PI * c * (x - a))) + d;
     }
 
     /**
-     * Generating a bitMatrix from the
+     * Generating a bit matrix from the
      * angular modulated generation function.
      * <p>
      * Values are sampled from 0, 1, ..., n-1
@@ -248,21 +326,10 @@ public class Helper {
     }
 
     /**
-     * Angular Modulated Generation Function
-     *
-     * @param x
-     * @param a
-     * @param b
-     * @param c
-     * @param d
-     * @return float
+     * The classic sigmoid function.
      */
-    private static double gen(double x,
-                              double a,
-                              double b,
-                              double c,
-                              double d) {
-        return Math.sin(2 * Math.PI * (x - a) * b * Math.cos(2 * Math.PI * c * (x - a))) + d;
+    public static double Sigmoid(double x) {
+        return 1 / (1 + Math.exp(-x));
     }
 
     /**
@@ -310,8 +377,8 @@ public class Helper {
      * @rtype boolean
      */
     private static boolean theSame(FitnessFunction[] f, String[] seq, int[][] x, int[][] y) {
-        for(FitnessFunction ff : f) {
-            if(ff.calculate(x, seq) != ff.calculate(y, seq))
+        for (FitnessFunction ff : f) {
+            if (ff.calculate(x, seq) != ff.calculate(y, seq))
                 return false;
         }
         return true;
@@ -348,7 +415,7 @@ public class Helper {
             else if (dominates(seq, x, s.getFirst(), f)) // x dominates archive entry
                 aDominated.add(s);
 
-            if(theSame(f, seq, x, s.getFirst()))
+            if (theSame(f, seq, x, s.getFirst()))
                 return;
         }
 
@@ -402,7 +469,7 @@ public class Helper {
             else if (dominates(seq, x.getSecond(), s.getSecond(), f)) // x dominates archive entry
                 aDominated.add(s);
 
-            if(theSame(f, seq, x.getSecond(), s.getSecond()))
+            if (theSame(f, seq, x.getSecond(), s.getSecond()))
                 return;
         }
 

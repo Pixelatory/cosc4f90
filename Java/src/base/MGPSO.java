@@ -1,12 +1,7 @@
 package base;
 
-import base.PSO;
 import util.FitnessFunction;
 import util.Operator;
-import util.Pair;
-import util.Triplet;
-
-import java.util.ArrayList;
 
 /*
     Nicholas Aksamit
